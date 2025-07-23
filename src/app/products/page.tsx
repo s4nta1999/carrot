@@ -4,9 +4,11 @@ import { useState } from 'react';
 import ProductList from '@/components/ProductList';
 import MobileLayout from '@/components/MobileLayout';
 import { useProducts } from '@/contexts/ProductContext';
+import { useUser } from '@/contexts/UserContext';
 
 export default function ProductsPage() {
   const { products } = useProducts();
+  const { logout, currentUser } = useUser();
   
   // 검색 상태
   const [keyword, setKeyword] = useState('');
@@ -30,9 +32,14 @@ export default function ProductsPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </button>
-      <button className="p-2" aria-label="메뉴">
+      <button 
+        onClick={logout}
+        className="p-2"
+        aria-label="로그아웃"
+        title="로그아웃"
+      >
         <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
       </button>
       <button className="relative p-2" aria-label="알림">

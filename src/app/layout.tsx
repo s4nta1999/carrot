@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ProductProvider } from "@/contexts/ProductContext";
+import { UserProvider } from "@/contexts/UserContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,9 +38,11 @@ export default function RootLayout({
       >
         {/* 모바일 컨테이너 */}
         <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl">
-          <ProductProvider>
-            {children}
-          </ProductProvider>
+          <UserProvider>
+            <ProductProvider>
+              {children}
+            </ProductProvider>
+          </UserProvider>
         </div>
       </body>
     </html>
