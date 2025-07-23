@@ -6,6 +6,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import CommentSection from '@/components/CommentSection';
+import { Comment } from '@/types';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -19,10 +20,7 @@ export default function ProductDetailPage() {
   const [likes, setLikes] = useState(product?.likes || 0);
   
   // 댓글 상태
-  const [comments, setComments] = useState([
-    { id: 1, author: '김당근', content: '상태 어떤가요?', time: '5분 전' },
-    { id: 2, author: '이사과', content: '네고 가능한가요?', time: '3분 전' }
-  ]);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   // 댓글 추가/삭제 함수
   const addComment = (content: string) => {
