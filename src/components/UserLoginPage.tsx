@@ -26,8 +26,8 @@ export default function UserLoginPage() {
 
     try {
       await createNewUser(name, email, selectedLocation);
-    } catch (err: any) {
-      setError(err.message || '사용자 생성에 실패했습니다.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '사용자 생성에 실패했습니다.');
     } finally {
       setLoading(false);
     }

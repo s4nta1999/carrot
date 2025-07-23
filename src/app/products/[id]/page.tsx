@@ -6,7 +6,6 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import CommentSection from '@/components/CommentSection';
-import MobileLayout from '@/components/MobileLayout';
 
 export default function ProductDetailPage() {
   const { id } = useParams();

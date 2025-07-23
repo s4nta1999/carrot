@@ -17,7 +17,7 @@ export default function ProductList({ products, keyword = '', isSearchMode = fal
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <p className="text-gray-500 text-center">
-          '{keyword}'에 대한 검색 결과가 없습니다.
+          &apos;{keyword}&apos;에 대한 검색 결과가 없습니다.
         </p>
         <p className="text-gray-400 text-sm mt-2">
           다른 검색어로 시도해보세요.
@@ -49,7 +49,7 @@ export default function ProductList({ products, keyword = '', isSearchMode = fal
       {isSearchMode && keyword && (
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
           <p className="text-sm text-gray-600">
-            '{keyword}' 검색 결과 {products.length}개
+            &apos;{keyword}&apos; 검색 결과 {products.length}개
           </p>
         </div>
       )}
