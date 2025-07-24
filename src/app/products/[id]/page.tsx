@@ -2,7 +2,9 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
-import { useState } from 'react';
+import { useChat } from '@/contexts/ChatContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import CommentSection from '@/components/CommentSection';
@@ -11,161 +13,245 @@ import { Comment } from '@/types';
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { products } = useProducts();
+  const { products, loading } = useProducts();
+  const { createChatRoom } = useChat();
+  const { user } = useAuth();
   
-  // ID로 상품 찾기
-  const product = products.find(p => p.id === Number(id));
+  // ID로 상품 찾기 (UUID 문자열 비교)
+  const product = products.find(p => p.id === id);
   
   const [isLiked, setIsLiked] = useState(false);
-  const [likes, setLikes] = useState(product?.likes || 0);
+  const [likes, setLikes] = useState(0);
+  const [chatLoading, setChatLoading] = useState(false);
   
-  // 댓글 상태
+  // 댓글 상태 (향후 실제 DB 연동)
   const [comments, setComments] = useState<Comment[]>([]);
 
-  // 댓글 추가/삭제 함수
+  // 상품 데이터 로딩 후 좋아요 수 설정
+  useEffect(() => {
+    if (product) {
+      setLikes(product.likes_count || 0);
+    }
+  }, [product]);
+
+  // 댓글 추가 (향후 실제 DB 연동)
   const addComment = (content: string) => {
-    const newComment = {
-      id: Date.now(),
-      author: '나',
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    const newComment: Comment = {
+      id: `temp-${Date.now()}`, // 임시 ID
+      user_id: user.id,
+      product_id: id as string,
       content,
-      time: '방금 전'
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      profiles: {
+        id: user.id,
+        username: user.email?.split('@')[0] || '사용자',
+        avatar_url: null,
+        location: '합정동',
+        temperature: 36.5,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
     };
     setComments(prev => [...prev, newComment]);
   };
 
-  const removeComment = (commentId: number) => {
+  // 댓글 삭제 (향후 실제 DB 연동)
+  const removeComment = (commentId: string) => {
     setComments(prev => prev.filter(c => c.id !== commentId));
   };
 
-  // 좋아요 토글 함수
+  // 좋아요 토글 (향후 실제 DB 연동)
   const toggleLike = () => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
     setIsLiked(!isLiked);
     setLikes(prev => isLiked ? prev - 1 : prev + 1);
   };
 
+  // 채팅하기 버튼 클릭
+  const handleStartChat = async () => {
+    if (!user) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    if (!product) {
+      alert('상품 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    setChatLoading(true);
+    
+    const { success, chatRoom, error } = await createChatRoom(product.id);
+    
+    if (success && chatRoom) {
+      // 채팅 페이지로 이동하면서 채팅방 ID 전달
+      router.push(`/chat?room=${chatRoom.id}`);
+    } else {
+      alert(error || '채팅방 생성에 실패했습니다.');
+    }
+    
+    setChatLoading(false);
+  };
+
+  // 시간 경과 계산
+  const getTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+
+    if (diffInMinutes < 1) return '방금 전';
+    if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}시간 전`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) return `${diffInDays}일 전`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    return `${diffInMonths}달 전`;
+  };
+
+  // 로딩 중
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col bg-gray-900">
+        <div className="flex items-center justify-center flex-1">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // 상품을 찾을 수 없음
   if (!product) {
     return (
       <div className="h-screen flex flex-col bg-gray-900">
-        <header className="bg-gray-900 border-b border-gray-700 flex-shrink-0 z-10">
-          <div className="flex items-center justify-between px-4 py-3">
-            <button onClick={() => router.back()} className="p-2">
+        <header className="bg-gray-900 border-b border-gray-700 p-4">
+          <div className="flex items-center justify-between">
+            <Link href="/products">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-            </button>
+            </Link>
+            <h1 className="text-lg font-semibold text-white">상품 상세</h1>
+            <div className="w-6"></div>
           </div>
         </header>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-lg font-medium text-white mb-2">상품을 찾을 수 없습니다</h2>
-            <Link href="/products" className="text-orange-500">목록으로 돌아가기</Link>
+        
+        <div className="flex items-center justify-center flex-1 text-center">
+          <div>
+            <div className="text-6xl mb-4">😅</div>
+            <h2 className="text-xl font-bold text-white mb-2">상품을 찾을 수 없어요</h2>
+            <p className="text-gray-400 mb-6">존재하지 않거나 삭제된 상품입니다.</p>
+            <Link 
+              href="/products"
+              className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+            >
+              상품 목록으로 돌아가기
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-  // 헤더 액션들
-  const headerActions = (
-    <>
-      <button className="p-2">
-        <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-      </button>
-      <button className="p-2">
-        <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-        </svg>
-      </button>
-      <button className="p-2">
-        <svg className="w-6 h-6 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-        </svg>
-      </button>
-    </>
-  );
-
   return (
     <div className="h-screen flex flex-col bg-gray-900">
-      {/* 헤더 - 고정 */}
-      <header className="bg-gray-900 border-b border-gray-700 flex-shrink-0 z-10">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button onClick={() => router.back()} className="p-2">
+      {/* 헤더 */}
+      <header className="bg-gray-900 border-b border-gray-700 p-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <Link href="/products">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
+          </Link>
+          <h1 className="text-lg font-semibold text-white">상품 상세</h1>
+          <button className="p-1">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zM12 13a1 1 0 110-2 1 1 0 010 2zM12 20a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
           </button>
-          <div className="flex items-center gap-4">
-            {headerActions}
-          </div>
         </div>
       </header>
 
-      {/* 콘텐츠 영역 - 스크롤 가능 */}
+      {/* 메인 콘텐츠 */}
       <main className="flex-1 overflow-y-auto">
         {/* 상품 이미지 */}
-        <div className="relative w-full h-80 bg-gray-800">
+        <div className="relative h-80 bg-gray-800">
           <Image
-            src={product.image}
+            src={product.image_url || '/images/placeholder.svg'}
             alt={product.title}
             fill
             className="object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              if (!target.src.includes('placeholder.svg')) {
-                target.src = '/images/placeholder.svg';
-              }
-            }}
+            priority
           />
         </div>
 
         {/* 상품 정보 */}
         <div className="p-4 bg-gray-900">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-2xl font-bold text-white">
-              {product.price === 0 ? '나눔' : `${product.price.toLocaleString()}원`}
-            </span>
-            <button
-              onClick={toggleLike}
-              className={`p-2 rounded-full ${isLiked ? 'text-red-500' : 'text-gray-400'}`}
-            >
-              <svg className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            </button>
-          </div>
-
-          <h1 className="text-xl font-bold text-white mb-2">{product.title}</h1>
-          
-          <div className="flex items-center text-sm text-gray-400 mb-4">
-            <span>합정동</span>
-            <span className="mx-2">•</span>
-            <span>5분 전</span>
-            <span className="mx-2">•</span>
-            <span>조회 {Math.floor(Math.random() * 100) + 50}</span>
-          </div>
-
-          <p className="text-gray-300 leading-relaxed mb-6">{product.description}</p>
-
-          <div className="flex items-center gap-4 text-sm text-gray-400 mb-6">
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span>{likes}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <span>{comments.length}</span>
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-white mb-2">{product.title}</h2>
+              <p className="text-2xl font-bold text-orange-500 mb-2">
+                {product.price === 0 ? '나눔' : `${product.price.toLocaleString()}원`}
+              </p>
+              <div className="flex items-center gap-4 text-sm text-gray-400">
+                <span>{product.location}</span>
+                <span>•</span>
+                <span>{getTimeAgo(product.created_at)}</span>
+                <span>•</span>
+                <span>조회 {product.views_count || 0}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* 댓글 섹션 */}
-        <div className="border-t-8 border-gray-100">
+          {/* 판매자 정보 */}
+          <div className="flex items-center gap-3 p-4 bg-gray-800 rounded-lg mb-4">
+            <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center">
+              {product.profiles?.avatar_url ? (
+                <Image
+                  src={product.profiles.avatar_url}
+                  alt={product.profiles.username || '판매자'}
+                  width={48}
+                  height={48}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-medium">
+                  {product.profiles?.username?.[0] || '?'}
+                </span>
+              )}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-white">{product.profiles?.username || '사용자'}</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span>{product.profiles?.location || '합정동'}</span>
+                <span>•</span>
+                <span>🌡️ {product.profiles?.temperature || 36.5}°C</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 상품 설명 */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-3">상품 정보</h3>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {product.description || '상품 설명이 없습니다.'}
+            </p>
+          </div>
+
+          {/* 댓글 섹션 */}
           <CommentSection
             comments={comments}
             onAddComment={addComment}
@@ -195,10 +281,26 @@ export default function ProductDetailPage() {
 
           {/* 채팅하기 버튼 */}
           <button 
-            onClick={() => alert('채팅방으로 이동합니다')}
-            className="flex-1 bg-orange-500 text-white py-3 rounded-lg font-medium"
+            onClick={handleStartChat}
+            disabled={chatLoading || product.user_id === user?.id}
+            className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center ${
+              product.user_id === user?.id
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : chatLoading
+                ? 'bg-orange-400 text-white cursor-not-allowed'
+                : 'bg-orange-500 text-white hover:bg-orange-600'
+            }`}
           >
-            채팅하기
+            {chatLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                채팅방 생성 중...
+              </>
+            ) : product.user_id === user?.id ? (
+              '내 상품입니다'
+            ) : (
+              '채팅하기'
+            )}
           </button>
         </div>
       </div>

@@ -30,7 +30,7 @@ export default function ProductsPage() {
   const getSortedProducts = () => {
     const filtered = products.filter(product =>
       product.title.toLowerCase().includes(keyword.toLowerCase()) ||
-      product.description.toLowerCase().includes(keyword.toLowerCase())
+      (product.description && product.description.toLowerCase().includes(keyword.toLowerCase()))
     );
 
     // 정렬 적용
@@ -40,10 +40,10 @@ export default function ProductsPage() {
       case 'priceDesc':
         return filtered.sort((a, b) => b.price - a.price);
       case 'popular':
-        return filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+        return filtered.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
       case 'latest':
       default:
-        return filtered.sort((a, b) => b.id - a.id); // ID가 높을수록 최신
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
   };
 

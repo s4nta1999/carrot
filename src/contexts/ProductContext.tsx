@@ -1,96 +1,209 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, ProductContextType, CreateProductData } from '@/types';
+import { createClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
-const initialProducts: Product[] = [
-  {
-    id: 1,
-    title: '파세코 창문형 인버터 에어컨',
-    description: '상태 좋은 창문형 에어컨입니다. 올 여름에도 시원하게 사용했어요.',
-    price: 340000,
-    location: '망원제1동',
-    timeAgo: '1시간 전',
-    image: '/images/placeholder.svg',
-    likes: 6,
-    comments: 3
-  },
-  {
-    id: 2,
-    title: '캐리어 벽걸이 에어컨 (나눔)',
-    description: '이사로 인해 나눔합니다. 직접 가져가실 분만 연락주세요.',
-    price: 0,
-    location: '양평동4가',
-    timeAgo: '5분 전',
-    image: '/images/placeholder.svg',
-    likes: 2,
-    comments: 1
-  },
-  {
-    id: 3,
-    title: 'M1 맥북 프로 급처',
-    description: '급하게 처분합니다. 상태 좋아요.',
-    price: 700000,
-    location: '양평제2동',
-    timeAgo: '4분 전',
-    image: '/images/placeholder.svg',
-    likes: 8,
-    comments: 5
-  },
-  {
-    id: 4,
-    title: '샤오미 공기청정기 (나눔)',
-    description: '한 번만 사용한 공기청정기 나눔합니다.',
-    price: 0,
-    location: '성산동',
-    timeAgo: '6분 전',
-    image: '/images/placeholder.svg',
-    likes: 3,
-    comments: 2
-  },
-  {
-    id: 5,
-    title: '아이폰 12 미니 128GB',
-    description: '깨끗하게 사용했습니다. 박스, 충전기 모두 있어요.',
-    price: 500000,
-    location: '합정동',
-    timeAgo: '10분 전',
-    image: '/images/placeholder.svg',
-    likes: 4,
-    comments: 2
-  },
-  {
-    id: 6,
-    title: 'LG 스타일러 미러',
-    description: '정말 깨끗합니다. 이사로 인한 급처분이에요.',
-    price: 800000,
-    location: '망원동',
-    timeAgo: '15분 전',
-    image: '/images/placeholder.svg',
-    likes: 2,
-    comments: 1
-  }
-];
-
 export function ProductProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { user } = useAuth();
+  const supabase = createClient();
 
-  const addProduct = (productData: CreateProductData) => {
-    const newProduct: Product = {
-      ...productData,
-      id: Date.now(),
-      location: '합정동', // 기본 위치
-      timeAgo: '방금 전',
-      likes: 0,
-      comments: 0
-    };
-    setProducts(prev => [newProduct, ...prev]);
+  // 시간 경과 계산 함수
+  const getTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+
+    if (diffInMinutes < 1) return '방금 전';
+    if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}시간 전`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) return `${diffInDays}일 전`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    return `${diffInMonths}달 전`;
+  };
+
+  // 상품 목록 가져오기
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('products')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            avatar_url,
+            location,
+            temperature
+          )
+        `)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+
+      setProducts(data || []);
+    } catch (err) {
+      console.error('상품 가져오기 오류:', err);
+      setError(err instanceof Error ? err.message : '상품을 불러올 수 없습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 상품 추가
+  const addProduct = async (productData: CreateProductData): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    try {
+      const { data, error: insertError } = await supabase
+        .from('products')
+        .insert([
+          {
+            ...productData,
+            user_id: user.id,
+            image_url: productData.image_url || '/images/placeholder.svg',
+            status: 'active'
+          }
+        ])
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            avatar_url,
+            location,
+            temperature
+          )
+        `)
+        .single();
+
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      // 로컬 상태 업데이트
+      setProducts(prev => [data, ...prev]);
+      
+      return { success: true };
+    } catch (err) {
+      console.error('상품 추가 오류:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : '상품 등록에 실패했습니다.' 
+      };
+    }
+  };
+
+  // 상품 수정
+  const updateProduct = async (id: string, updates: Partial<Product>): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    try {
+      const { data, error: updateError } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id) // 본인 상품만 수정 가능
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            avatar_url,
+            location,
+            temperature
+          )
+        `)
+        .single();
+
+      if (updateError) {
+        throw new Error(updateError.message);
+      }
+
+      // 로컬 상태 업데이트
+      setProducts(prev => 
+        prev.map(product => 
+          product.id === id ? data : product
+        )
+      );
+      
+      return { success: true };
+    } catch (err) {
+      console.error('상품 수정 오류:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : '상품 수정에 실패했습니다.' 
+      };
+    }
+  };
+
+  // 상품 삭제
+  const deleteProduct = async (id: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: '로그인이 필요합니다.' };
+    }
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id); // 본인 상품만 삭제 가능
+
+      if (deleteError) {
+        throw new Error(deleteError.message);
+      }
+
+      // 로컬 상태 업데이트
+      setProducts(prev => prev.filter(product => product.id !== id));
+      
+      return { success: true };
+    } catch (err) {
+      console.error('상품 삭제 오류:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : '상품 삭제에 실패했습니다.' 
+      };
+    }
+  };
+
+  // 컴포넌트 마운트시 상품 목록 가져오기
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const value = {
+    products,
+    loading,
+    error,
+    fetchProducts,
+    addProduct,
+    updateProduct,
+    deleteProduct,
   };
 
   return (
-    <ProductContext.Provider value={{ products, addProduct }}>
+    <ProductContext.Provider value={value}>
       {children}
     </ProductContext.Provider>
   );

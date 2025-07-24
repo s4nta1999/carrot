@@ -1,26 +1,85 @@
-// 상품 타입
+// 사용자 프로필 타입
+export interface Profile {
+  id: string; // UUID
+  username: string | null;
+  avatar_url: string | null;
+  location: string;
+  temperature: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// 상품 타입 (Supabase 스키마와 매칭)
 export interface Product {
-  id: number;
+  id: string; // UUID
+  user_id: string; // UUID
   title: string;
-  description: string;
+  description: string | null;
   price: number;
   location: string;
-  timeAgo: string;
-  image: string;
-  likes?: number;
-  comments?: number;
+  image_url: string | null;
+  status: 'active' | 'sold' | 'reserved';
+  likes_count: number;
+  views_count: number;
+  created_at: string;
+  updated_at: string;
+  // 조인된 데이터
+  profiles?: Profile;
 }
 
 // 댓글 타입
 export interface Comment {
-  id: number;
-  author: string;
+  id: string; // UUID
+  user_id: string; // UUID
+  product_id: string; // UUID
   content: string;
-  time: string;
+  created_at: string;
+  updated_at: string;
+  // 조인된 데이터
+  profiles?: Profile;
 }
 
-// 상품 생성 타입 (id, location, timeAgo 등 자동 생성 필드 제외)
-export type CreateProductData = Omit<Product, 'id' | 'location' | 'timeAgo' | 'likes' | 'comments'>;
+// 좋아요 타입
+export interface Like {
+  id: string; // UUID
+  user_id: string; // UUID
+  product_id: string; // UUID
+  created_at: string;
+}
+
+// 채팅방 타입
+export interface ChatRoom {
+  id: string; // UUID
+  product_id: string; // UUID
+  buyer_id: string; // UUID
+  seller_id: string; // UUID
+  created_at: string;
+  // 조인된 데이터
+  products?: Product;
+  buyer_profile?: Profile;
+  seller_profile?: Profile;
+  last_message?: Message;
+}
+
+// 메시지 타입
+export interface Message {
+  id: string; // UUID
+  chat_room_id: string; // UUID
+  sender_id: string; // UUID
+  content: string;
+  is_read: boolean;
+  created_at: string;
+  // 조인된 데이터
+  profiles?: Profile;
+}
+
+// 상품 생성 타입
+export type CreateProductData = {
+  title: string;
+  description: string;
+  price: number;
+  image_url?: string;
+};
 
 // 검색 관련 타입
 export interface SearchState {
@@ -28,8 +87,30 @@ export interface SearchState {
   isVisible: boolean;
 }
 
-// Context 타입
+// Context 타입들
 export interface ProductContextType {
   products: Product[];
-  addProduct: (product: CreateProductData) => void;
+  loading: boolean;
+  error: string | null;
+  fetchProducts: () => Promise<void>;
+  addProduct: (product: CreateProductData) => Promise<{ success: boolean; error?: string }>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
+  deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;
+}
+
+export interface ChatContextType {
+  chatRooms: ChatRoom[];
+  currentMessages: Message[];
+  loading: boolean;
+  error: string | null;
+  fetchChatRooms: () => Promise<void>;
+  fetchMessages: (chatRoomId: string) => Promise<void>;
+  createChatRoom: (productId: string) => Promise<{ success: boolean; chatRoom?: ChatRoom; error?: string }>;
+  sendMessage: (chatRoomId: string, content: string) => Promise<{ success: boolean; error?: string }>;
+  markAsRead: (messageId: string) => Promise<void>;
+}
+
+// 유틸리티 타입
+export interface TimeAgo {
+  timeAgo: string;
 } 
