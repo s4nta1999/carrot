@@ -4,11 +4,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useLikes } from '@/hooks/useLikes';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import CommentSection from '@/components/CommentSection';
-import { Comment } from '@/types';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -20,60 +20,22 @@ export default function ProductDetailPage() {
   // ID로 상품 찾기 (UUID 문자열 비교)
   const product = products.find(p => p.id === id);
   
-  const [isLiked, setIsLiked] = useState(false);
-  const [likes, setLikes] = useState(0);
   const [chatLoading, setChatLoading] = useState(false);
   
-  // 댓글 상태 (향후 실제 DB 연동)
-  const [comments, setComments] = useState<Comment[]>([]);
+  // 좋아요 기능 (실제 DB 연동)
+  const { isLiked, likesCount, toggleLike } = useLikes(id as string);
 
-  // 상품 데이터 로딩 후 좋아요 수 설정
-  useEffect(() => {
-    if (product) {
-      setLikes(product.likes_count || 0);
-    }
-  }, [product]);
-
-  // 댓글 추가 (향후 실제 DB 연동)
-  const addComment = (content: string) => {
+  // 좋아요 토글 핸들러
+  const handleToggleLike = async () => {
     if (!user) {
       alert('로그인이 필요합니다.');
       return;
     }
 
-    const newComment: Comment = {
-      id: `temp-${Date.now()}`, // 임시 ID
-      user_id: user.id,
-      product_id: id as string,
-      content,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      profiles: {
-        id: user.id,
-        username: user.email?.split('@')[0] || '사용자',
-        avatar_url: null,
-        location: '합정동',
-        temperature: 36.5,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    };
-    setComments(prev => [...prev, newComment]);
-  };
-
-  // 댓글 삭제 (향후 실제 DB 연동)
-  const removeComment = (commentId: string) => {
-    setComments(prev => prev.filter(c => c.id !== commentId));
-  };
-
-  // 좋아요 토글 (향후 실제 DB 연동)
-  const toggleLike = () => {
-    if (!user) {
-      alert('로그인이 필요합니다.');
-      return;
+    const { success, error } = await toggleLike();
+    if (!success && error) {
+      alert(error);
     }
-    setIsLiked(!isLiked);
-    setLikes(prev => isLiked ? prev - 1 : prev + 1);
   };
 
   // 채팅하기 버튼 클릭
@@ -252,11 +214,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* 댓글 섹션 */}
-          <CommentSection
-            comments={comments}
-            onAddComment={addComment}
-            onRemoveComment={removeComment}
-          />
+          <CommentSection productId={id as string} />
         </div>
 
         {/* 하단 여백 */}
@@ -268,7 +226,7 @@ export default function ProductDetailPage() {
         <div className="flex items-center gap-3">
           {/* 좋아요 버튼 */}
           <button
-            onClick={toggleLike}
+            onClick={handleToggleLike}
             className={`flex items-center gap-2 px-4 py-2 rounded-full border ${
               isLiked ? 'border-red-500 bg-red-500/20 text-red-500' : 'border-gray-600 bg-gray-800 text-gray-300'
             }`}
@@ -276,7 +234,7 @@ export default function ProductDetailPage() {
             <svg className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
-            <span className="text-sm font-medium">❤️ {likes}</span>
+            <span className="text-sm font-medium">❤️ {likesCount}</span>
           </button>
 
           {/* 채팅하기 버튼 */}
