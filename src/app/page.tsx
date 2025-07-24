@@ -22,18 +22,20 @@ export default function HomePage() {
     }
   }, [user, profile, loading, router]);
 
-  // 로딩 중이지만 사용자 정보가 없으면 바로 로그인 화면 표시
-  if (loading && !user) {
-    return <AuthPage />;
-  }
+  // 에러 처리: 로딩이 오래 걸리면 로그인 화면 표시
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('로딩 타임아웃 - 로그인 화면 표시');
+      }
+    }, 3000); // 3초 후 타임아웃
 
-  // 다른 로딩 상황에서는 간단한 로딩 표시
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    );
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  // 로딩 중이거나 사용자 정보가 없으면 바로 로그인 화면 표시
+  if (loading || !user) {
+    return <AuthPage />;
   }
 
   // 사용자가 로그인되어 있지 않으면 로그인 페이지 표시

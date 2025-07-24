@@ -68,8 +68,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // 초기 세션 가져오기
+        // 초기 세션 가져오기 (타임아웃 포함)
     const initializeAuth = async () => {
+      const timeout = setTimeout(() => {
+        if (isMounted && loading) {
+          console.log('Auth 초기화 타임아웃 - 로딩 완료');
+          setLoading(false);
+        }
+      }, 5000); // 5초 타임아웃
+
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -82,9 +89,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null);
           
           if (session?.user) {
-            const profile = await fetchProfile(session.user.id);
-            if (isMounted) {
-              setProfile(profile);
+            try {
+              const profile = await fetchProfile(session.user.id);
+              if (isMounted) {
+                setProfile(profile);
+              }
+            } catch (profileError) {
+              console.error('프로필 가져오기 실패:', profileError);
+              // 프로필 에러가 있어도 로딩은 완료
+              if (isMounted) {
+                setProfile(null);
+              }
             }
           } else {
             setProfile(null);
@@ -92,12 +107,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           setLoading(false);
         }
-      } catch (error) {
-        console.error('인증 초기화 오류:', error);
-        if (isMounted) {
-          setLoading(false);
+              } catch (error) {
+          console.error('인증 초기화 오류:', error);
+          if (isMounted) {
+            setLoading(false);
+          }
+        } finally {
+          clearTimeout(timeout);
         }
-      }
     };
 
     initializeAuth();
