@@ -5,10 +5,14 @@ import ProductList from '@/components/ProductList';
 import MobileLayout from '@/components/MobileLayout';
 import { useProducts } from '@/contexts/ProductContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useRouter } from 'next/navigation';
 
 export default function ProductsPage() {
   const { products } = useProducts();
   const { signOut } = useAuth();
+  const { unreadCount } = useNotifications();
+  const router = useRouter();
   
   // 검색 상태
   const [keyword, setKeyword] = useState('');
@@ -113,11 +117,20 @@ export default function ProductsPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
       </button>
-      <button className="relative p-2" aria-label="알림">
+      <button 
+        onClick={() => router.push('/notifications')}
+        className="relative p-2" 
+        aria-label="알림"
+        title="알림"
+      >
         <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9 17H4l5 5v-5zM21 12H3" />
         </svg>
-        <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">1</span>
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
       </button>
     </>
   );

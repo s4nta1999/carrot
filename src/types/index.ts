@@ -108,6 +108,7 @@ export interface ChatContextType {
   createChatRoom: (productId: string) => Promise<{ success: boolean; chatRoom?: ChatRoom; error?: string }>;
   sendMessage: (chatRoomId: string, content: string) => Promise<{ success: boolean; error?: string }>;
   markAsRead: (messageId: string) => Promise<void>;
+  getUnreadMessagesCount: () => number;
 }
 
 // 유틸리티 타입

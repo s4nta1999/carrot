@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { useChat } from '@/contexts/ChatContext';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ export default function MobileLayout({
 }: MobileLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { getUnreadMessagesCount } = useChat();
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 relative overflow-hidden">
@@ -91,13 +93,27 @@ export default function MobileLayout({
           </button>
           
           {/* 채팅 */}
-          <button className="flex flex-col items-center py-2 text-gray-400 relative">
-            <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link 
+            href="/chat" 
+            className={`flex flex-col items-center py-2 relative ${
+              pathname === '/chat' ? 'text-orange-500' : 'text-gray-400'
+            }`}
+          >
+            <svg 
+              className="w-6 h-6 mb-1" 
+              fill={pathname === '/chat' ? 'currentColor' : 'none'} 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span className="absolute -top-1 right-3 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">8</span>
+            {getUnreadMessagesCount() > 0 && (
+              <span className="absolute -top-1 right-3 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {getUnreadMessagesCount() > 99 ? '99+' : getUnreadMessagesCount()}
+              </span>
+            )}
             <span className="text-xs">채팅</span>
-          </button>
+          </Link>
           
           {/* 나의 당근 */}
           <button className="flex flex-col items-center py-2 text-gray-400">

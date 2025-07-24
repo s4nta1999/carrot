@@ -329,6 +329,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
+  // 읽지 않은 메시지 수 계산
+  const getUnreadMessagesCount = (): number => {
+    if (!user) return 0;
+    
+    // 각 채팅방별로 읽지 않은 메시지 수를 합계
+    return chatRooms.reduce((total, room) => {
+      // 마지막 메시지가 있고, 상대방이 보낸 메시지이며, 읽지 않은 경우
+      if (room.last_message && 
+          room.last_message.sender_id !== user.id && 
+          !room.last_message.is_read) {
+        return total + 1;
+      }
+      return total;
+    }, 0);
+  };
+
   const value = {
     chatRooms,
     currentMessages,
@@ -339,6 +355,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     createChatRoom,
     sendMessage,
     markAsRead,
+    getUnreadMessagesCount,
   };
 
   return (
