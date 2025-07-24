@@ -21,7 +21,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, username?: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithProvider: (provider: 'google' | 'github' | 'kakao') => Promise<{ error: AuthError | null }>;
+  signInWithProvider: (provider: 'github' | 'kakao') => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
 }
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 소셜 로그인
-  const signInWithProvider = async (provider: 'google' | 'github' | 'kakao') => {
+  const signInWithProvider = async (provider: 'github' | 'kakao') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
