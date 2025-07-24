@@ -36,60 +36,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const supabase = createClient();
 
-  // 프로필 가져오기
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('프로필 가져오기 오류:', error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('프로필 가져오기 예외:', error);
-      return null;
-    }
-  };
-
   // 인증 상태 변화 감지
   useEffect(() => {
-    // 현재 세션 가져오기
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id).then(setProfile);
+    let isMounted = true; // 컴포넌트 마운트 상태 추적
+
+    // 프로필 가져오기 (useEffect 내부에서 정의)
+    const fetchProfile = async (userId: string) => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('프로필 가져오기 오류:', error);
+          return null;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('프로필 가져오기 예외:', error);
+        return null;
       }
-      setLoading(false);
-    });
+    };
+
+    // 초기 세션 가져오기
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('세션 가져오기 오류:', error);
+        }
+
+        if (isMounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            const profile = await fetchProfile(session.user.id);
+            if (isMounted) {
+              setProfile(profile);
+            }
+          } else {
+            setProfile(null);
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('인증 초기화 오류:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
 
     // 인증 상태 변화 구독
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
+        console.log('🔐 Auth state changed:', event);
+        
+        if (!isMounted) return;
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
-          setProfile(profile);
+          if (isMounted) {
+            setProfile(profile);
+          }
         } else {
           setProfile(null);
         }
         
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false; // 컴포넌트 언마운트시 플래그 설정
+      subscription.unsubscribe();
+    };
   }, []);
 
   // 회원가입
