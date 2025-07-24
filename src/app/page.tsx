@@ -6,15 +6,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthPage from '@/components/AuthPage';
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // 로딩이 완료되고 사용자가 로그인되어 있으면 상품 페이지로 이동
+    // 로딩이 완료되고 사용자가 로그인되어 있으면
     if (!loading && user) {
-      router.push('/products');
+      // 위치 설정을 하지 않은 사용자는 위치 설정 페이지로
+      if (profile && !profile.is_location_set) {
+        router.push('/location-setup');
+      } else {
+        // 위치 설정이 완료된 사용자는 products 페이지로
+        router.push('/products');
+      }
     }
-  }, [user, loading, router]);
+  }, [user, profile, loading, router]);
 
   // 로딩 중이면 로딩 화면 표시
   if (loading) {

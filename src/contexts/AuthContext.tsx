@@ -12,6 +12,13 @@ interface Profile {
   temperature: number;
   created_at: string;
   updated_at: string;
+  // 위치 정보 추가
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
+  district?: string | null;
+  city?: string | null;
+  is_location_set?: boolean;
 }
 
 interface AuthContextType {

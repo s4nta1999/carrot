@@ -48,12 +48,25 @@ npm install
    data/likes-uuid.csv      → likes 테이블
    ```
 
-### 3️⃣ 환경변수 설정
-`.env.local` 파일 생성:
+### 3️⃣ 환경 변수 설정
+`.env.local` 파일을 생성하고 다음 변수들을 설정하세요:
+
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# Supabase 설정
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# 카카오맵 API 키 (동네지도 기능용)
+NEXT_PUBLIC_KAKAO_MAP_API_KEY=your_kakao_map_api_key
 ```
+
+**카카오맵 API 키 발급:**
+1. [Kakao Developers](https://developers.kakao.com/) 접속
+2. 로그인 후 `내 애플리케이션` → `애플리케이션 추가하기`
+3. 생성된 앱에서 `앱 키` → `JavaScript 키` 복사
+4. `플랫폼` → `Web` → `사이트 도메인` 추가:
+   - 로컬: `http://localhost:3000`
+   - 배포: `https://your-domain.vercel.app`
 
 ### 4️⃣ 개발 서버 실행
 ```bash
