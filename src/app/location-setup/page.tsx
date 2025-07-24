@@ -5,12 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase';
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
-
 export default function LocationSetupPage() {
   const router = useRouter();
   const { user, profile, updateProfile } = useAuth();
@@ -19,7 +13,6 @@ export default function LocationSetupPage() {
   const [currentStep, setCurrentStep] = useState(1); // 1: 위치 선택, 2: 확인
   const [locationMethod, setLocationMethod] = useState<'auto' | 'manual'>('auto');
   const [loading, setLoading] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
 
   // 위치 정보 상태
   const [locationData, setLocationData] = useState({
@@ -34,30 +27,16 @@ export default function LocationSetupPage() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  // 카카오맵 API 로드
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          setMapLoaded(true);
-        });
-      };
-      document.head.appendChild(script);
-    }
-  }, []);
-
   // 현재 위치 가져오기
   const getCurrentLocation = () => {
     setLoading(true);
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords;
           setLocationData(prev => ({ ...prev, latitude, longitude }));
-          getAddressFromCoords(latitude, longitude);
+          await getAddressFromCoords(latitude, longitude);
         },
         (error) => {
           console.error('위치 가져오기 실패:', error);
@@ -73,41 +52,62 @@ export default function LocationSetupPage() {
     }
   };
 
-  // 좌표로 주소 가져오기
-  const getAddressFromCoords = (lat: number, lng: number) => {
-    if (!mapLoaded) return;
-
-    const geocoder = new window.kakao.maps.services.Geocoder();
-    const coord = new window.kakao.maps.LatLng(lat, lng);
-
-    geocoder.coord2Address(coord.getLng(), coord.getLat(), (result: any, status: any) => {
-      if (status === window.kakao.maps.services.Status.OK) {
-        const address = result[0];
+  // 좌표로 주소 가져오기 (Nominatim API 사용)
+  const getAddressFromCoords = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ko`
+      );
+      const data = await response.json();
+      
+      if (data && data.display_name) {
+        // 한국 주소 파싱
+        const addressParts = data.display_name.split(', ');
+        const district = data.address?.neighbourhood || data.address?.suburb || 
+                        data.address?.village || addressParts[0] || '알 수 없음';
+        const city = data.address?.city || data.address?.county || 
+                    data.address?.state || '서울시';
+        
         setLocationData(prev => ({
           ...prev,
-          address: address.address.address_name,
-          district: address.address.region_3depth_name || address.address.region_2depth_name,
-          city: address.address.region_1depth_name
+          address: data.display_name,
+          district: district.replace(/\d+(-\d+)?$/, '').trim(), // 번지수 제거
+          city: city
         }));
       }
+    } catch (error) {
+      console.error('주소 가져오기 실패:', error);
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
-  // 주소 검색
-  const searchAddress = (keyword: string) => {
-    if (!mapLoaded || !keyword.trim()) return;
+  // 주소 검색 (Nominatim API 사용)
+  const searchAddress = async (keyword: string) => {
+    if (!keyword.trim()) return;
 
-    const ps = new window.kakao.maps.services.Places();
-    
-    ps.keywordSearch(keyword, (data: any, status: any) => {
-      if (status === window.kakao.maps.services.Status.OK) {
-        setSearchResults(data.slice(0, 5)); // 최대 5개 결과
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(keyword + ' 대한민국')}&limit=5&accept-language=ko`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const results = data.map((item: any) => ({
+          place_name: item.name || item.display_name.split(',')[0],
+          address_name: item.display_name,
+          y: item.lat,
+          x: item.lon
+        }));
+        setSearchResults(results);
       } else {
         setSearchResults([]);
         alert('검색 결과가 없습니다.');
       }
-    });
+    } catch (error) {
+      console.error('주소 검색 실패:', error);
+      alert('주소 검색 중 오류가 발생했습니다.');
+    }
   };
 
   // 검색 결과 선택

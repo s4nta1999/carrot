@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase';
 import MobileLayout from '@/components/MobileLayout';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
+// Leaflet을 dynamic import로 로드 (SSR 방지)
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(mod => mod.Popup), { ssr: false });
 
 interface Seller {
   id: string;
@@ -33,107 +34,68 @@ export default function MapPage() {
   const { user, profile } = useAuth();
   const supabase = createClient();
   
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 카카오맵 API 로드
+  // Leaflet CSS 및 아이콘 설정
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          setMapLoaded(true);
+      // Leaflet CSS를 동적으로 로드
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+      
+      // Leaflet 아이콘 설정
+      import('leaflet').then((L) => {
+        delete (L.Icon.Default.prototype as any)._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
         });
-      };
-      document.head.appendChild(script);
+        setMapLoaded(true);
+      });
     }
   }, []);
 
-  // 지도 초기화 및 판매자 정보 표시
-  useEffect(() => {
-    if (mapLoaded && mapContainer.current && profile?.latitude && profile?.longitude) {
-      initializeMap();
-    }
-  }, [mapLoaded, profile]);
-
-  // 지도 초기화
-  const initializeMap = () => {
-    if (!profile?.latitude || !profile?.longitude) return;
-
-    const options = {
-      center: new window.kakao.maps.LatLng(profile.latitude, profile.longitude),
-      level: 5
-    };
-
-    const kakaoMap = new window.kakao.maps.Map(mapContainer.current, options);
-    setMap(kakaoMap);
-
-    // 내 위치 마커
-    const myPosition = new window.kakao.maps.LatLng(profile.latitude, profile.longitude);
-    const myMarker = new window.kakao.maps.Marker({
-      position: myPosition,
-      title: '내 위치'
-    });
-    myMarker.setMap(kakaoMap);
-
-    // 내 위치 인포윈도우
-    const myInfoWindow = new window.kakao.maps.InfoWindow({
-      content: `<div style="padding:10px; text-align:center; min-width:120px;">
-        <div style="font-weight:bold; color:#333;">🏠 내 위치</div>
-        <div style="font-size:12px; color:#666; margin-top:4px;">${profile.district || '내 동네'}</div>
-      </div>`
-    });
-    myInfoWindow.open(kakaoMap, myMarker);
-
-    fetchSellers(kakaoMap);
-  };
-
   // 판매자 정보 가져오기
-  const fetchSellers = async (mapInstance?: any) => {
+  const fetchSellers = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .rpc('get_sellers_with_products')
-        .neq('id', user.id);
+      // 기본 쿼리 사용
+      const { data: sellersData, error } = await supabase
+        .from('profiles')
+        .select(`
+          id, username, avatar_url, temperature, latitude, longitude, district, address,
+          products!inner(id, title, price, image_url, status)
+        `)
+        .neq('id', user.id)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .eq('is_location_set', true)
+        .eq('products.status', 'active');
 
       if (error) {
         console.error('판매자 정보 가져오기 실패:', error);
-        // 뷰가 없으면 기본 쿼리 사용
-        const { data: fallbackData } = await supabase
-          .from('profiles')
-          .select(`
-            id, username, avatar_url, temperature, latitude, longitude, district, address,
-            products!inner(id, title, price, image_url, status)
-          `)
-          .neq('id', user.id)
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null)
-          .eq('products.status', 'active');
-
-        const processedData = fallbackData?.map(profile => ({
-          ...profile,
-          product_count: profile.products?.length || 0,
-          product_ids: profile.products?.map(p => p.id) || [],
-          product_titles: profile.products?.map(p => p.title) || [],
-          product_prices: profile.products?.map(p => p.price) || [],
-          product_images: profile.products?.map(p => p.image_url) || []
-        })) || [];
-
-        setSellers(processedData);
-        displaySellersOnMap(processedData, mapInstance || map);
         return;
       }
 
-      setSellers(data || []);
-      displaySellersOnMap(data || [], mapInstance || map);
+      const processedData = sellersData?.map(profile => ({
+        ...profile,
+        product_count: profile.products?.length || 0,
+        product_ids: profile.products?.map(p => p.id) || [],
+        product_titles: profile.products?.map(p => p.title) || [],
+        product_prices: profile.products?.map(p => p.price) || [],
+        product_images: profile.products?.map(p => p.image_url) || []
+      })) || [];
+
+      setSellers(processedData);
 
     } catch (error) {
       console.error('판매자 정보 가져오기 오류:', error);
@@ -142,27 +104,23 @@ export default function MapPage() {
     }
   };
 
-  // 지도에 판매자 마커 표시
-  const displaySellersOnMap = (sellersData: any[], mapInstance: any) => {
-    if (!mapInstance) return;
+  useEffect(() => {
+    if (mapLoaded && profile?.latitude && profile?.longitude) {
+      fetchSellers();
+    }
+  }, [mapLoaded, profile, user]);
 
-    sellersData.forEach((seller) => {
-      if (!seller.latitude || !seller.longitude) return;
-
-      const position = new window.kakao.maps.LatLng(seller.latitude, seller.longitude);
-      
-      // 마커 생성
-      const marker = new window.kakao.maps.Marker({
-        position: position,
-        title: seller.username
-      });
-      marker.setMap(mapInstance);
-
-      // 클릭 이벤트
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        setSelectedSeller(seller);
-      });
-    });
+  // 거리 계산 (km)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   };
 
   if (!profile?.is_location_set) {
@@ -186,11 +144,88 @@ export default function MapPage() {
     );
   }
 
+  if (!mapLoaded || !profile?.latitude || !profile?.longitude) {
+    return (
+      <MobileLayout title="동네지도">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-white text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p>지도를 불러오는 중...</p>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
+
   return (
     <MobileLayout title={`📍 ${profile?.district || '동네지도'}`}>
       <div className="relative h-full">
         {/* 지도 컨테이너 */}
-        <div ref={mapContainer} className="w-full h-96 bg-gray-800"></div>
+        <div className="w-full h-96">
+          <MapContainer
+            center={[profile.latitude, profile.longitude]}
+            zoom={13}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            />
+            
+            {/* 내 위치 마커 */}
+            <Marker position={[profile.latitude, profile.longitude]}>
+              <Popup>
+                <div className="text-center">
+                  <div className="font-bold">🏠 내 위치</div>
+                  <div className="text-sm text-gray-600">{profile.district || '내 동네'}</div>
+                </div>
+              </Popup>
+            </Marker>
+
+            {/* 판매자 마커들 */}
+            {sellers.map((seller) => (
+              <Marker 
+                key={seller.id} 
+                position={[seller.latitude, seller.longitude]}
+                eventHandlers={{
+                  click: () => setSelectedSeller(seller)
+                }}
+              >
+                <Popup>
+                  <div className="min-w-48">
+                    <div className="flex items-center mb-2">
+                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                        {seller.avatar_url ? (
+                          <img
+                            src={seller.avatar_url}
+                            alt={seller.username}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-lg">👤</span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold">{seller.username}</div>
+                        <div className="text-sm text-gray-600">{seller.district}</div>
+                        <div className="text-xs text-orange-600">🌡️ {seller.temperature}°C</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      📦 판매 상품 {seller.products?.length || 0}개
+                    </div>
+                    <button
+                      onClick={() => setSelectedSeller(seller)}
+                      className="w-full px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600"
+                    >
+                      상품 보기
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
 
         {/* 로딩 오버레이 */}
         {loading && (
@@ -201,20 +236,6 @@ export default function MapPage() {
             </div>
           </div>
         )}
-
-        {/* 내 위치 버튼 */}
-        <button
-          onClick={() => {
-            if (map && profile?.latitude && profile?.longitude) {
-              const myPosition = new window.kakao.maps.LatLng(profile.latitude, profile.longitude);
-              map.setCenter(myPosition);
-              map.setLevel(3);
-            }
-          }}
-          className="absolute top-4 right-4 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors z-10"
-        >
-          <span className="text-xl">🎯</span>
-        </button>
 
         {/* 판매자 상품 목록 모달 */}
         {selectedSeller && (
@@ -240,6 +261,14 @@ export default function MapPage() {
                       <p className="text-sm text-gray-400">{selectedSeller.district}</p>
                       <p className="text-xs text-orange-500">
                         🌡️ {selectedSeller.temperature}°C
+                        {profile?.latitude && profile?.longitude && (
+                          <> • 📍 {calculateDistance(
+                            profile.latitude, 
+                            profile.longitude, 
+                            selectedSeller.latitude, 
+                            selectedSeller.longitude
+                          ).toFixed(1)}km</>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -255,10 +284,10 @@ export default function MapPage() {
               {/* 상품 목록 */}
               <div className="p-4 overflow-y-auto max-h-80">
                 <h4 className="text-white font-medium mb-3">
-                  판매 상품 ({(selectedSeller.product_count || selectedSeller.products?.length) || 0}개)
+                  판매 상품 ({selectedSeller.products?.length || 0}개)
                 </h4>
                 <div className="space-y-3">
-                  {(selectedSeller.products || []).map((product: any, index: number) => (
+                  {(selectedSeller.products || []).map((product: any) => (
                     <Link
                       key={product.id}
                       href={`/products/${product.id}`}
