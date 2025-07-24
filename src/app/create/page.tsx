@@ -74,7 +74,9 @@ export default function CreateProductPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
     // 기본 검증
     if (!title.trim()) {
       alert('제목을 입력해주세요.');
@@ -91,22 +93,39 @@ export default function CreateProductPage() {
       return;
     }
 
-    const newProduct = {
-      title: title.trim(),
-      description: description.trim(),
-      price: saleType === 'share' ? 0 : Number(price),
-      image: images.length > 0 ? images[0] : '/images/placeholder.svg'
-    };
+    setIsSubmitting(true);
 
-    addProduct(newProduct);
-    
-    // 폼 초기화
-    setTitle('');
-    setDescription('');
-    setPrice('');
-    setImages([]);
-    
-    router.push('/products');
+    try {
+      const newProduct = {
+        title: title.trim(),
+        description: description.trim(),
+        price: saleType === 'share' ? 0 : Number(price),
+        image_url: images.length > 0 ? images[0] : '/images/placeholder.svg'
+      };
+
+      const { success, error } = await addProduct(newProduct);
+      
+      if (success) {
+        // 폼 초기화
+        setTitle('');
+        setDescription('');
+        setPrice('');
+        setImages([]);
+        
+        // 성공 메시지
+        alert('상품이 성공적으로 등록되었습니다! 🎉');
+        
+        // 상품 목록으로 이동
+        router.push('/products');
+      } else {
+        alert(error || '상품 등록에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('상품 등록 오류:', err);
+      alert('상품 등록 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -122,9 +141,12 @@ export default function CreateProductPage() {
           <h1 className="text-lg font-semibold">내 물건 팔기</h1>
           <button 
             onClick={handleSubmit}
-            className="text-gray-400 text-sm"
+            disabled={isSubmitting}
+            className={`text-sm ${
+              isSubmitting ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400'
+            }`}
           >
-            임시저장
+            {isSubmitting ? '저장 중...' : '완료'}
           </button>
         </div>
       </header>
@@ -290,9 +312,21 @@ export default function CreateProductPage() {
       <div className="bg-black border-t border-gray-800 p-4 flex-shrink-0">
         <button
           onClick={handleSubmit}
-          className="w-full py-4 bg-orange-500 text-white font-semibold rounded-lg text-lg"
+          disabled={isSubmitting}
+          className={`w-full py-4 font-semibold rounded-lg text-lg transition-colors ${
+            isSubmitting 
+              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              : 'bg-orange-500 text-white hover:bg-orange-600'
+          }`}
         >
-          작성 완료
+          {isSubmitting ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              등록 중...
+            </div>
+          ) : (
+            '작성 완료'
+          )}
         </button>
       </div>
     </div>

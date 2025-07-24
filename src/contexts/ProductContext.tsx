@@ -187,10 +187,10 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 컴포넌트 마운트시 상품 목록 가져오기
+  // 컴포넌트 마운트시 및 사용자 로그인시 상품 목록 가져오기
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [user]);
 
   const value = {
     products,

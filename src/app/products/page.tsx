@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProductList from '@/components/ProductList';
 import MobileLayout from '@/components/MobileLayout';
 import { useProducts } from '@/contexts/ProductContext';
@@ -9,10 +9,15 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
 
 export default function ProductsPage() {
-  const { products } = useProducts();
+  const { products, fetchProducts } = useProducts();
   const { signOut } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
+
+  // 페이지 마운트시 상품 목록 새로고침
+  useEffect(() => {
+    fetchProducts();
+  }, []);
   
   // 검색 상태
   const [keyword, setKeyword] = useState('');
