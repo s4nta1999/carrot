@@ -20,7 +20,7 @@ carrot/
 ├── 🛠️ scripts/                 # 유틸리티 스크립트
 │   └── generate-csv-with-uuid.js # 토이 데이터 생성 스크립트
 │
-├── 🗄️ supabase-schema.sql      # 데이터베이스 스키마
+├── 🗄️ supabase-complete-reset.sql # 완전한 데이터베이스 초기화
 │
 └── 📱 src/                     # Next.js 앱 소스코드
     ├── app/                    # 앱 라우터
@@ -39,14 +39,10 @@ npm install
 ### 2️⃣ Supabase 설정
 1. [Supabase Dashboard](https://supabase.com) 접속
 2. 새 프로젝트 생성
-3. **SQL Editor**에서 `supabase-schema.sql` 실행
-4. **Table Editor**에서 CSV 파일들 순서대로 import:
-   ```
-   data/users-uuid.csv      → users 테이블
-   data/products-uuid.csv   → products 테이블  
-   data/comments-uuid.csv   → comments 테이블
-   data/likes-uuid.csv      → likes 테이블
-   ```
+3. **SQL Editor**에서 `supabase-complete-reset.sql` 실행
+   - ✅ **모든 테이블 자동 생성** (위치 기능 포함)
+   - ✅ **인덱스, 트리거, RLS 정책** 모두 설정
+   - ✅ **한 번에 완전한 데이터베이스 구조 완성**
 
 ### 3️⃣ 환경 변수 설정
 `.env.local` 파일을 생성하고 다음 변수들을 설정하세요:
@@ -112,7 +108,8 @@ comments (249개) + likes (977개)
 
 - **[데이터베이스 명세서](docs/database-schema.md)** - 테이블 구조 및 관계
 - **[Supabase 설정 가이드](docs/supabase-setup-guide.md)** - 단계별 설정 방법
-- **[CSV Import 가이드](docs/uuid-import-guide.md)** - 데이터 import 순서
+
+**🚀 이제 `supabase-complete-reset.sql` 한 파일로 모든 설정이 완료됩니다!**
 
 ## 🛠️ 개발 명령어
 
