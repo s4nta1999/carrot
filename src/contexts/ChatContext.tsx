@@ -279,7 +279,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 실시간 메시지 구독 (특정 채팅방)
+  // 실시간 메시지 및 채팅방 구독
   useEffect(() => {
     if (!user) return;
 
@@ -294,6 +294,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           table: 'messages'
         },
         async (payload) => {
+          console.log('새 메시지 수신:', payload);
+          
           // 현재 사용자가 참여한 채팅방의 메시지만 처리
           const { data: message } = await supabase
             .from('messages')
@@ -313,13 +315,36 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             .single();
 
           if (message) {
+            // 현재 메시지 목록 업데이트
             setCurrentMessages(prev => {
-              // 중복 방지
               const exists = prev.some(msg => msg.id === message.id);
               if (exists) return prev;
               return [...prev, message];
             });
+
+            // 채팅방 목록도 업데이트 (마지막 메시지 갱신)
+            setChatRooms(prev => {
+              return prev.map(room => {
+                if (room.id === message.chat_room_id) {
+                  return { ...room, last_message: message };
+                }
+                return room;
+              });
+            });
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_rooms'
+        },
+        async (payload) => {
+          console.log('새 채팅방 생성:', payload);
+          // 새 채팅방이 생성되면 채팅방 목록 새로고침
+          await fetchChatRooms();
         }
       )
       .subscribe();
@@ -327,7 +352,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return () => {
       messagesSubscription.unsubscribe();
     };
-  }, [user]);
+  }, [user, fetchChatRooms]);
 
   // 읽지 않은 메시지 수 계산
   const getUnreadMessagesCount = (): number => {

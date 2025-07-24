@@ -118,7 +118,7 @@ export default function AuthPage() {
             }}
             theme="dark"
             providers={[]}
-            redirectTo={`${window.location.origin}/products`}
+            redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/products` : '/products'}
             onlyThirdPartyProviders={false}
             magicLink={false}
             showLinks={true}

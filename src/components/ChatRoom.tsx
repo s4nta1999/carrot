@@ -22,7 +22,12 @@ export default function ChatRoom({ chatRoom, onBack }: ChatRoomProps) {
     if (chatRoom.id) {
       fetchMessages(chatRoom.id);
     }
-  }, [chatRoom.id]);
+  }, [chatRoom.id, fetchMessages]);
+
+  // 실시간 메시지 업데이트 확인
+  useEffect(() => {
+    console.log('현재 메시지 업데이트:', currentMessages.length);
+  }, [currentMessages]);
 
   // 새 메시지가 추가되면 스크롤을 맨 아래로
   useEffect(() => {
