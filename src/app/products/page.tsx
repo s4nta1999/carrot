@@ -4,11 +4,11 @@ import { useState } from 'react';
 import ProductList from '@/components/ProductList';
 import MobileLayout from '@/components/MobileLayout';
 import { useProducts } from '@/contexts/ProductContext';
-import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProductsPage() {
   const { products } = useProducts();
-  const { logout } = useUser();
+  const { signOut } = useAuth();
   
   // 검색 상태
   const [keyword, setKeyword] = useState('');
@@ -103,12 +103,12 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <button 
-        onClick={logout}
-        className="p-2"
-        aria-label="로그아웃"
-        title="로그아웃"
-      >
+              <button 
+          onClick={signOut}
+          className="p-2"
+          aria-label="로그아웃"
+          title="로그아웃"
+        >
         <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>

@@ -2,50 +2,40 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/contexts/UserContext';
-import UserLoginPage from '@/components/UserLoginPage';
+import { useAuth } from '@/contexts/AuthContext';
+import AuthPage from '@/components/AuthPage';
 
-export default function Home() {
+export default function HomePage() {
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const { currentUser, loading } = useUser();
 
   useEffect(() => {
-    if (!loading && currentUser) {
-      // 로그인되어 있으면 상품 페이지로 이동
-      router.replace('/products');
+    // 로딩이 완료되고 사용자가 로그인되어 있으면 상품 페이지로 이동
+    if (!loading && user) {
+      router.push('/products');
     }
-  }, [currentUser, loading, router]);
+  }, [user, loading, router]);
 
-  // 로딩 중일 때
+  // 로딩 중이면 로딩 화면 표시
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-20 h-20 bg-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-4">
-            <span className="text-3xl">🥕</span>
+          <div className="mx-auto h-16 w-16 bg-orange-500 rounded-full flex items-center justify-center mb-4 animate-pulse">
+            <span className="text-3xl font-bold text-white">🥕</span>
           </div>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-300">더미 사용자 로딩중...</p>
+          <p className="text-white text-lg">당근마켓 로딩 중...</p>
         </div>
       </div>
     );
   }
 
-  // 로그인되지 않았으면 사용자 선택 페이지 표시
-  if (!currentUser) {
-    return <UserLoginPage />;
+  // 사용자가 로그인되어 있지 않으면 로그인 페이지 표시
+  if (!user) {
+    return <AuthPage />;
   }
 
-  // 로그인되어 있으면 products로 리다이렉트 (useEffect에서 처리)
-  return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-20 h-20 bg-orange-500 rounded-2xl mx-auto flex items-center justify-center mb-4">
-          <span className="text-3xl">🥕</span>
-        </div>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-        <p className="text-gray-300">당근마켓으로 이동중...</p>
-      </div>
-    </div>
-  );
+  // 사용자가 로그인되어 있으면 상품 페이지로 리다이렉트
+  // (useEffect에서 처리되지만, 안전장치)
+  return null;
 }
