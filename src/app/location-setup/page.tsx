@@ -201,9 +201,16 @@ export default function LocationSetupPage() {
     }
   };
 
+  // 리다이렉트 처리 (useEffect로 이동)
+  useEffect(() => {
+    if (!user || profile?.is_location_set) {
+      router.push('/products');
+    }
+  }, [user, profile?.is_location_set, router]);
+
+  // 로그인하지 않은 사용자나 이미 위치 설정 완료한 사용자는 바로 리다이렉트
   if (!user || profile?.is_location_set) {
-    router.push('/products');
-    return null;
+    return null; // 로딩창 없이 즉시 리다이렉트
   }
 
   return (

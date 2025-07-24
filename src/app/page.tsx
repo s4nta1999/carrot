@@ -22,16 +22,16 @@ export default function HomePage() {
     }
   }, [user, profile, loading, router]);
 
-  // 로딩 중이면 로딩 화면 표시
+  // 로딩 중이지만 사용자 정보가 없으면 바로 로그인 화면 표시
+  if (loading && !user) {
+    return <AuthPage />;
+  }
+
+  // 다른 로딩 상황에서는 간단한 로딩 표시
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-orange-500 rounded-full flex items-center justify-center mb-4 animate-pulse">
-            <span className="text-3xl font-bold text-white">🥕</span>
-          </div>
-          <p className="text-white text-lg">당근마켓 로딩 중...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
       </div>
     );
   }
