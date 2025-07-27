@@ -11,7 +11,6 @@ export default function LocationSetupPage() {
   const supabase = createClient();
 
   const [currentStep, setCurrentStep] = useState(1); // 1: 위치 선택, 2: 확인
-  const [locationMethod, setLocationMethod] = useState<'auto' | 'manual'>('auto');
   const [loading, setLoading] = useState(false);
 
   // 위치 정보 상태
@@ -27,60 +26,7 @@ export default function LocationSetupPage() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
-  // 현재 위치 가져오기
-  const getCurrentLocation = () => {
-    setLoading(true);
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocationData(prev => ({ ...prev, latitude, longitude }));
-          await getAddressFromCoords(latitude, longitude);
-        },
-        (error) => {
-          console.error('위치 가져오기 실패:', error);
-          alert('위치 정보를 가져올 수 없습니다. 수동으로 설정해주세요.');
-          setLocationMethod('manual');
-          setLoading(false);
-        }
-      );
-    } else {
-      alert('이 브라우저는 위치 서비스를 지원하지 않습니다.');
-      setLocationMethod('manual');
-      setLoading(false);
-    }
-  };
 
-  // 좌표로 주소 가져오기 (Nominatim API 사용)
-  const getAddressFromCoords = async (lat: number, lng: number) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ko`
-      );
-      const data = await response.json();
-      
-      if (data && data.display_name) {
-        // 한국 주소 파싱
-        const addressParts = data.display_name.split(', ');
-        const district = data.address?.neighbourhood || data.address?.suburb || 
-                        data.address?.village || addressParts[0] || '알 수 없음';
-        const city = data.address?.city || data.address?.county || 
-                    data.address?.state || '서울시';
-        
-        setLocationData(prev => ({
-          ...prev,
-          address: data.display_name,
-          district: district.replace(/\d+(-\d+)?$/, '').trim(), // 번지수 제거
-          city: city
-        }));
-      }
-    } catch (error) {
-      console.error('주소 가져오기 실패:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 주소 검색 (Nominatim API 사용)
   const searchAddress = async (keyword: string) => {
@@ -257,74 +203,39 @@ export default function LocationSetupPage() {
               </p>
             </div>
 
-            {/* 위치 설정 방법 선택 */}
+            {/* 위치 검색 */}
             <div className="space-y-4">
-              {/* 현재 위치 사용 */}
-              <button
-                onClick={() => {
-                  setLocationMethod('auto');
-                  getCurrentLocation();
-                }}
-                disabled={loading}
-                className="w-full p-4 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors disabled:opacity-50"
-              >
-                {loading && locationMethod === 'auto' ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    현재 위치 가져오는 중...
-                  </div>
-                ) : (
-                  '📱 현재 위치 사용하기'
-                )}
-              </button>
-
-              {/* 수동 설정 */}
               <div className="space-y-3">
-                <button
-                  onClick={() => setLocationMethod('manual')}
-                  className={`w-full p-4 border-2 rounded-lg font-medium transition-colors ${
-                    locationMethod === 'manual'
-                      ? 'border-orange-500 bg-orange-500/20 text-orange-500'
-                      : 'border-gray-600 bg-gray-800 text-white hover:border-gray-500'
-                  }`}
-                >
-                  🔍 직접 검색하기
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    placeholder="동네, 도로명, 건물명 검색"
+                    className="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
+                    onKeyPress={(e) => e.key === 'Enter' && searchAddress(searchKeyword)}
+                  />
+                  <button
+                    onClick={() => searchAddress(searchKeyword)}
+                    className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    검색
+                  </button>
+                </div>
 
-                {locationMethod === 'manual' && (
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={searchKeyword}
-                        onChange={(e) => setSearchKeyword(e.target.value)}
-                        placeholder="동네, 도로명, 건물명 검색"
-                        className="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500"
-                        onKeyPress={(e) => e.key === 'Enter' && searchAddress(searchKeyword)}
-                      />
+                {/* 검색 결과 */}
+                {searchResults.length > 0 && (
+                  <div className="bg-gray-800 border border-gray-600 rounded-lg max-h-60 overflow-y-auto">
+                    {searchResults.map((place, index) => (
                       <button
-                        onClick={() => searchAddress(searchKeyword)}
-                        className="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                        key={index}
+                        onClick={() => selectSearchResult(place)}
+                        className="w-full p-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-600 last:border-b-0"
                       >
-                        검색
+                        <div className="font-medium text-white">{place.place_name}</div>
+                        <div className="text-sm text-gray-400">{place.address_name}</div>
                       </button>
-                    </div>
-
-                    {/* 검색 결과 */}
-                    {searchResults.length > 0 && (
-                      <div className="bg-gray-800 border border-gray-600 rounded-lg max-h-60 overflow-y-auto">
-                        {searchResults.map((place, index) => (
-                          <button
-                            key={index}
-                            onClick={() => selectSearchResult(place)}
-                            className="w-full p-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-600 last:border-b-0"
-                          >
-                            <div className="font-medium text-white">{place.place_name}</div>
-                            <div className="text-sm text-gray-400">{place.address_name}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
