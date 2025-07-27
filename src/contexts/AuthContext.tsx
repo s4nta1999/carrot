@@ -85,36 +85,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   metadata: session.user.user_metadata
                 });
                 
-                try {
-                  const { data: newProfile, error: createError } = await supabase
-                    .from('profiles')
-                    .insert({
-                      id: session.user.id,
-                      username: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '사용자',
-                      avatar_url: session.user.user_metadata?.avatar_url,
-                      location: '위치 정보 없음',
-                      temperature: 36.5,
-                      is_location_set: false,
-                      created_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString()
-                    })
-                    .select()
-                    .single();
+                // 기존 프로필 재확인
+                const { data: existingProfile, error: checkError } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .single();
+                
+                if (checkError && checkError.code !== 'PGRST116') {
+                  console.error('❌ 프로필 확인 오류:', checkError);
+                }
+                
+                if (existingProfile) {
+                  console.log('✅ 기존 프로필 발견:', existingProfile);
+                  profile = existingProfile;
+                } else {
+                  console.log('🆕 새 프로필 생성 시도...');
+                  
+                  try {
+                    const { data: newProfile, error: createError } = await supabase
+                      .from('profiles')
+                      .insert({
+                        id: session.user.id,
+                        username: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '사용자',
+                        avatar_url: session.user.user_metadata?.avatar_url,
+                        location: '위치 정보 없음',
+                        temperature: 36.5,
+                        is_location_set: false,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                      })
+                      .select()
+                      .single();
 
-                  if (createError) {
-                    console.error('❌ 프로필 생성 오류:', createError);
-                    console.error('❌ 에러 코드:', createError.code);
-                    console.error('❌ 에러 메시지:', createError.message);
-                    console.error('❌ 에러 상세:', createError.details);
-                    console.error('❌ 에러 힌트:', createError.hint);
-                  } else {
-                    console.log('✅ 프로필 생성 완료:', newProfile);
-                    profile = newProfile;
+                    if (createError) {
+                      console.error('❌ 프로필 생성 오류:', createError);
+                      console.error('❌ 에러 코드:', createError.code);
+                      console.error('❌ 에러 메시지:', createError.message);
+                      console.error('❌ 에러 상세:', createError.details);
+                      console.error('❌ 에러 힌트:', createError.hint);
+                    } else {
+                      console.log('✅ 프로필 생성 완료:', newProfile);
+                      profile = newProfile;
+                    }
+                  } catch (error) {
+                    console.error('❌ 프로필 생성 예외:', error);
+                    console.error('❌ 예외 타입:', typeof error);
+                    console.error('❌ 예외 내용:', JSON.stringify(error, null, 2));
                   }
-                } catch (error) {
-                  console.error('❌ 프로필 생성 예외:', error);
-                  console.error('❌ 예외 타입:', typeof error);
-                  console.error('❌ 예외 내용:', JSON.stringify(error, null, 2));
                 }
               }
               
@@ -168,36 +186,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               metadata: session.user.user_metadata
             });
             
-            try {
-              const { data: newProfile, error: createError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: session.user.id,
-                  username: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '사용자',
-                  avatar_url: session.user.user_metadata?.avatar_url,
-                  location: '위치 정보 없음',
-                  temperature: 36.5,
-                  is_location_set: false,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                })
-                .select()
-                .single();
+            // 기존 프로필 재확인
+            const { data: existingProfile, error: checkError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (checkError && checkError.code !== 'PGRST116') {
+              console.error('❌ 프로필 확인 오류:', checkError);
+            }
+            
+            if (existingProfile) {
+              console.log('✅ 기존 프로필 발견:', existingProfile);
+              profile = existingProfile;
+            } else {
+              console.log('🆕 새 프로필 생성 시도...');
+              
+              try {
+                const { data: newProfile, error: createError } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: session.user.id,
+                    username: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '사용자',
+                    avatar_url: session.user.user_metadata?.avatar_url,
+                    location: '위치 정보 없음',
+                    temperature: 36.5,
+                    is_location_set: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  })
+                  .select()
+                  .single();
 
-              if (createError) {
-                console.error('❌ 프로필 생성 오류:', createError);
-                console.error('❌ 에러 코드:', createError.code);
-                console.error('❌ 에러 메시지:', createError.message);
-                console.error('❌ 에러 상세:', createError.details);
-                console.error('❌ 에러 힌트:', createError.hint);
-              } else {
-                console.log('✅ 프로필 생성 완료:', newProfile);
-                profile = newProfile;
+                if (createError) {
+                  console.error('❌ 프로필 생성 오류:', createError);
+                  console.error('❌ 에러 코드:', createError.code);
+                  console.error('❌ 에러 메시지:', createError.message);
+                  console.error('❌ 에러 상세:', createError.details);
+                  console.error('❌ 에러 힌트:', createError.hint);
+                } else {
+                  console.log('✅ 프로필 생성 완료:', newProfile);
+                  profile = newProfile;
+                }
+              } catch (error) {
+                console.error('❌ 프로필 생성 예외:', error);
+                console.error('❌ 예외 타입:', typeof error);
+                console.error('❌ 예외 내용:', JSON.stringify(error, null, 2));
               }
-            } catch (error) {
-              console.error('❌ 프로필 생성 예외:', error);
-              console.error('❌ 예외 타입:', typeof error);
-              console.error('❌ 예외 내용:', JSON.stringify(error, null, 2));
             }
           }
           
