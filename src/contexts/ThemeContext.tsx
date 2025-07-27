@@ -14,35 +14,21 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('dark');
+  const [mounted, setMounted] = useState(false);
 
-  // 초기 테마 설정 (localStorage에서 가져오기)
+  // 컴포넌트 마운트 후 초기화
   useEffect(() => {
+    setMounted(true);
     const savedTheme = localStorage.getItem('theme') as Theme;
     if (savedTheme) {
       setThemeState(savedTheme);
-    } else {
-      // 기본값은 다크모드
-      setThemeState('dark');
-    }
-  }, []);
-
-  // 초기 로딩 시 HTML 클래스 설정
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    const initialTheme = savedTheme || 'dark';
-    
-    const html = document.documentElement;
-    if (initialTheme === 'dark') {
-      html.classList.add('dark');
-      html.classList.remove('light');
-    } else {
-      html.classList.add('light');
-      html.classList.remove('dark');
     }
   }, []);
 
   // 테마 변경 시 localStorage 저장 및 HTML 클래스 적용
   useEffect(() => {
+    if (!mounted) return;
+    
     localStorage.setItem('theme', theme);
     
     // HTML 요소에 클래스 적용
@@ -54,7 +40,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       html.classList.add('light');
       html.classList.remove('dark');
     }
-  }, [theme]);
+  }, [theme, mounted]);
 
   // 테마 토글 함수
   const toggleTheme = () => {

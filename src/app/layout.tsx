@@ -5,6 +5,7 @@ import { ProductProvider } from "@/contexts/ProductContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import ClientOnly from "@/components/ClientOnly";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,22 +34,26 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // SSR에서 다크모드 관련 스크립트를 클라이언트에서만 실행
+  const suppressHydrationWarning = true;
   return (
-    <html lang="ko" className="dark">
+    <html lang="ko" suppressHydrationWarning={suppressHydrationWarning}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 dark:bg-gray-900`}
       >
         {/* 모바일 컨테이너 */}
         <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl">
-          <ThemeProvider>
-            <AuthProvider>
-              <ProductProvider>
-                <ChatProvider>
-                  {children}
-                </ChatProvider>
-              </ProductProvider>
-            </AuthProvider>
-          </ThemeProvider>
+          <ClientOnly>
+            <ThemeProvider>
+              <AuthProvider>
+                <ProductProvider>
+                  <ChatProvider>
+                    {children}
+                  </ChatProvider>
+                </ProductProvider>
+              </AuthProvider>
+            </ThemeProvider>
+          </ClientOnly>
         </div>
       </body>
     </html>

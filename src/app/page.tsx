@@ -33,9 +33,13 @@ export default function HomePage() {
     return () => clearTimeout(timeout);
   }, [loading]);
 
-  // 로딩 중이거나 사용자 정보가 없으면 바로 로그인 화면 표시
-  if (loading || !user) {
-    return <AuthPage />;
+  // 로딩 중이면 로딩 화면 표시
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+      </div>
+    );
   }
 
   // 사용자가 로그인되어 있지 않으면 로그인 페이지 표시

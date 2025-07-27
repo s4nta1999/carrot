@@ -10,6 +10,11 @@ interface ThemeToggleProps {
 export default function ThemeToggle({ className = '', size = 'md' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
 
+  const handleToggle = () => {
+    console.log('테마 토글 클릭:', theme);
+    toggleTheme();
+  };
+
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-10 h-10',
@@ -24,7 +29,7 @@ export default function ThemeToggle({ className = '', size = 'md' }: ThemeToggle
 
   return (
     <button
-      onClick={toggleTheme}
+      onClick={handleToggle}
       className={`
         ${sizeClasses[size]}
         rounded-full 
