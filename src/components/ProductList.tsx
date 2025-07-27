@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import ProductCard from './ProductCard';
 import { Product } from '@/types';
 
@@ -56,9 +55,7 @@ export default function ProductList({ products, keyword = '', isSearchMode = fal
       
       {/* 상품 리스트 */}
       {products.map(product => (
-        <Link href={`/products/${product.id}`} key={product.id}>
-          <ProductCard product={product} />
-        </Link>
+        <ProductCard product={product} key={product.id} />
       ))}
     </>
   );
