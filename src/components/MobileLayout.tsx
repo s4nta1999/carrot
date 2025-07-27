@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useChat } from '@/contexts/ChatContext';
-import ThemeToggle from './ThemeToggle';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -26,26 +25,25 @@ export default function MobileLayout({
   const { getUnreadMessagesCount } = useChat();
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 dark:bg-gray-900 bg-white relative overflow-hidden">
+    <div className="h-screen flex flex-col bg-white relative overflow-hidden">
       {/* 상단 헤더 - 고정 */}
-      <header className="bg-gray-900 dark:bg-gray-900 bg-white border-b border-gray-700 dark:border-gray-700 border-gray-200 flex-shrink-0 z-10">
+      <header className="bg-white border-b border-gray-200 flex-shrink-0 z-10">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center">
             {showBackButton ? (
               <button onClick={() => router.back()} className="p-2 mr-2">
-                <svg className="w-6 h-6 text-white dark:text-white text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
             ) : null}
-            <h1 className="text-lg font-bold text-white dark:text-white text-gray-900">{title}</h1>
+            <h1 className="text-lg font-bold text-gray-900">{title}</h1>
           </div>
           
           <div className="flex items-center gap-4">
-            <ThemeToggle size="sm" />
             {showSearchButton && (
               <button className="p-2">
-                <svg className="w-6 h-6 text-gray-300 dark:text-gray-300 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
@@ -56,19 +54,19 @@ export default function MobileLayout({
       </header>
 
       {/* 콘텐츠 영역 - 스크롤 가능 */}
-      <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
+      <main className="flex-1 overflow-y-auto bg-white">
         {children}
       </main>
 
-            {/* 하단 네비게이션 - 고정 */}
+      {/* 하단 네비게이션 - 고정 */}
       {!hideBottomNav && (
-        <nav className="bg-gray-900 dark:bg-gray-900 bg-white border-t border-gray-700 dark:border-gray-700 border-gray-200 flex-shrink-0">
+        <nav className="bg-white border-t border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-around py-2">
                       {/* 홈 */}
           <Link 
             href="/products" 
             className={`flex flex-col items-center py-2 ${
-              pathname === '/products' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-400'
+              pathname === '/products' ? 'text-orange-500' : 'text-gray-400'
             }`}
           >
             <svg className="w-6 h-6 mb-1" fill={pathname === '/products' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 20 20">
@@ -81,7 +79,7 @@ export default function MobileLayout({
           <Link 
             href="/map" 
             className={`flex flex-col items-center py-2 ${
-              pathname === '/map' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-400'
+              pathname === '/map' ? 'text-orange-500' : 'text-gray-400'
             }`}
           >
             <svg 

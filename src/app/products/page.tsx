@@ -135,10 +135,12 @@ export default function ProductsPage() {
     </>
   );
 
-  // 사용자 위치 기반 제목 생성
+  // 사용자 위치 기반 제목 생성 (행정동 표시)
   const getLocationTitle = () => {
     if (profile?.location) {
-      return `${profile.location}`;
+      // "대한민국" 제거하고 행정동만 표시
+      const location = profile.location.replace('대한민국 ', '').replace('대한민국', '');
+      return location || '전체 상품';
     }
     return "전체 상품";
   };

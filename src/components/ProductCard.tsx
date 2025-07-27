@@ -11,7 +11,7 @@ interface ProductCardProps {
 const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/products/${product.id}`} className="block">
-      <div className="flex gap-4 p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700">
+      <div className="flex gap-4 p-4 bg-white hover:bg-gray-50 transition-colors border-b border-gray-100">
         {/* 상품 이미지 */}
         <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
           <OptimizedImage
@@ -26,22 +26,22 @@ const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
         
         {/* 상품 정보 */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-gray-900 dark:text-white font-medium mb-1 truncate">
+          <h3 className="text-gray-900 font-medium mb-1 truncate">
             {product.title}
           </h3>
           
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
             <span>{product.profiles?.location || product.location || '위치 정보 없음'}</span>
             <span>•</span>
             <span>{getTimeAgo(product.created_at)}</span>
           </div>
           
-          <p className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+          <p className="text-lg font-bold text-gray-900 mb-2">
             {formatPrice(product.price)}
           </p>
           
           {/* 좋아요 및 조회수 */}
-          <div className="flex items-center gap-4 text-sm text-gray-400 dark:text-gray-500">
+          <div className="flex items-center gap-4 text-sm text-gray-400">
             <div className="flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
