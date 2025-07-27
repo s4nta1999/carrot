@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // 디바운스 훅
 export function useDebounce<T>(value: T, delay: number): T {
@@ -20,4 +20,38 @@ export function useDebounce<T>(value: T, delay: number): T {
 // 검색 디바운스 훅
 export function useSearchDebounce(searchTerm: string, delay: number = 300): string {
   return useDebounce(searchTerm, delay);
+}
+
+// 메모이제이션된 콜백 훅
+export function useMemoizedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  deps: React.DependencyList
+): T {
+  const ref = useRef<T>(callback);
+  
+  // 최신 콜백 참조 업데이트
+  ref.current = callback;
+  
+  return useCallback((...args: Parameters<T>) => {
+    return ref.current(...args);
+  }, deps) as T;
+}
+
+// 디바운스된 콜백 훅
+export function useDebouncedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number,
+  deps: React.DependencyList = []
+): T {
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  
+  return useCallback((...args: Parameters<T>) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  }, [callback, delay, ...deps]) as T;
 } 

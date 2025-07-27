@@ -18,10 +18,8 @@ export default function ProductsPage() {
   // 페이지 마운트시 상품 목록 새로고침 (사용자 위치 기반)
   useEffect(() => {
     if (profile?.location) {
-      console.log('📍 사용자 위치 기반 상품 필터링:', profile.location);
       fetchProducts(profile.location);
     } else {
-      console.log('📍 위치 정보 없음 - 전체 상품 표시');
       fetchProducts();
     }
   }, [profile?.location]);

@@ -53,9 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // 초기 세션 가져오기 (타임아웃 포함)
     const initializeAuth = async () => {
+      let isMounted = true;
+      
+      // 5초 타임아웃 설정
       const timeout = setTimeout(() => {
-        if (isMounted && loading) {
-          console.log('Auth 초기화 타임아웃 - 로딩 완료');
+        if (isMounted) {
           setLoading(false);
         }
       }, 5000); // 5초 타임아웃
@@ -77,8 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               // 프로필이 없으면 자동 생성
               if (!profile) {
-                console.log('🆕 새 사용자 프로필 생성 중...');
-                
                 try {
                   const { data: newProfile, error: createError } = await supabase
                     .from('profiles')
@@ -96,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   if (createError) {
                     console.error('❌ 프로필 생성 오류:', createError);
                   } else {
-                    console.log('✅ 프로필 생성 완료:', newProfile);
                     profile = newProfile;
                   }
                 } catch (error) {
@@ -120,23 +119,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           setLoading(false);
         }
-              } catch (error) {
-          console.error('인증 초기화 오류:', error);
-          if (isMounted) {
-            setLoading(false);
-          }
-        } finally {
-          clearTimeout(timeout);
+      } catch (error) {
+        console.error('인증 초기화 오류:', error);
+        if (isMounted) {
+          setLoading(false);
         }
+      } finally {
+        clearTimeout(timeout);
+      }
     };
 
     initializeAuth();
 
     // 인증 상태 변화 구독
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔐 Auth state changed:', event);
-        
+      async (_event, session) => {
         if (!isMounted) return;
         
         setSession(session);
@@ -147,8 +144,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // 프로필이 없으면 자동 생성
           if (!profile) {
-            console.log('🆕 새 사용자 프로필 생성 중...');
-            
             try {
               const { data: newProfile, error: createError } = await supabase
                 .from('profiles')
@@ -166,7 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (createError) {
                 console.error('❌ 프로필 생성 오류:', createError);
               } else {
-                console.log('✅ 프로필 생성 완료:', newProfile);
                 profile = newProfile;
               }
             } catch (error) {
@@ -179,10 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           setProfile(null);
-        }
-        
-        if (isMounted) {
-          setLoading(false);
         }
       }
     );
