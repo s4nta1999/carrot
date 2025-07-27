@@ -39,7 +39,7 @@ export const generateProductTitle = (description: string, category?: string): st
 // AI 설명 생성
 export const generateProductDescription = (
   title: string, 
-  category?: string, 
+  _category?: string, 
   condition?: string,
   price?: number
 ): string => {
@@ -124,6 +124,6 @@ export const generateAiProduct = (
     description,
     category,
     condition,
-    price
+    ...(price !== undefined && { price })
   };
 }; 

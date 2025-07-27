@@ -135,11 +135,10 @@ export default function CreateProductPage() {
       let imageUrl: string = '/images/placeholder.svg';
       
       if (images.length > 0) {
-        const uploadResult = await uploadImage(images[0].file);
-        if (uploadResult.success && uploadResult.url) {
-          imageUrl = uploadResult.url;
-        } else {
-          alert('이미지 업로드에 실패했습니다: ' + uploadResult.error);
+        try {
+          imageUrl = await uploadImage(images[0].file);
+        } catch (error) {
+          alert('이미지 업로드에 실패했습니다.');
           setIsSubmitting(false);
           return;
         }
