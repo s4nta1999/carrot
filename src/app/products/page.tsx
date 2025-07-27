@@ -25,10 +25,6 @@ export default function ProductsPage() {
     }
   }, [profile?.location]);
   
-  // 검색 상태
-  const [keyword, setKeyword] = useState('');
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
-  
   // 정렬 상태
   const [sortType, setSortType] = useState('latest'); // latest, priceAsc, priceDesc, popular
   const [isSortVisible, setIsSortVisible] = useState(false);
@@ -41,24 +37,19 @@ export default function ProductsPage() {
     { value: 'popular', label: '인기순', icon: '❤️' },
   ];
 
-  // 필터링 및 정렬된 상품 리스트
+  // 정렬된 상품 리스트
   const getSortedProducts = () => {
-    const filtered = products.filter(product =>
-      product.title.toLowerCase().includes(keyword.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(keyword.toLowerCase()))
-    );
-
     // 정렬 적용
     switch (sortType) {
       case 'priceAsc':
-        return filtered.sort((a, b) => a.price - b.price);
+        return products.sort((a, b) => a.price - b.price);
       case 'priceDesc':
-        return filtered.sort((a, b) => b.price - a.price);
+        return products.sort((a, b) => b.price - a.price);
       case 'popular':
-        return filtered.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+        return products.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
       case 'latest':
       default:
-        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return products.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
   };
 
@@ -68,16 +59,6 @@ export default function ProductsPage() {
   // 헤더 액션 버튼들
   const headerActions = (
     <>
-      <button 
-        onClick={() => setIsSearchVisible(!isSearchVisible)}
-        className="p-2"
-        aria-label="검색"
-      >
-        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </button>
-      
       {/* 정렬 버튼 */}
       <div className="relative">
         <button 
@@ -148,47 +129,12 @@ export default function ProductsPage() {
       title={getLocationTitle()}
       headerActions={headerActions}
     >
-      {/* 검색바 */}
-      {isSearchVisible && (
-        <div className="px-4 py-3 bg-white border-b border-gray-200">
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="상품명을 검색해보세요"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              autoFocus
-            />
-            {keyword && (
-              <button
-                onClick={() => setKeyword('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* 현재 정렬 표시 및 결과 수 */}
       <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <span>{currentSortOption?.icon}</span>
             <span>{currentSortOption?.label}</span>
-            {keyword && (
-              <>
-                <span>•</span>
-                <span>&apos;{keyword}&apos; 검색</span>
-              </>
-            )}
           </div>
           <span className="text-sm text-gray-500">
             {sortedProducts.length}개 상품
@@ -199,8 +145,6 @@ export default function ProductsPage() {
       {/* 상품 리스트 */}
       <ProductList 
         products={sortedProducts}
-        keyword={keyword}
-        isSearchMode={isSearchVisible && keyword.length > 0}
       />
     </MobileLayout>
   );
