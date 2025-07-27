@@ -1,13 +1,17 @@
+// 공통 타입
+export type UUID = string;
+export type Timestamp = string;
+
 // 사용자 프로필 타입
 export interface Profile {
-  id: string; // UUID
+  id: UUID;
   username: string | null;
   avatar_url: string | null;
   location: string;
   temperature: number;
-  created_at: string;
-  updated_at: string;
-  // 위치 정보 추가
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  // 위치 정보
   latitude?: number | null;
   longitude?: number | null;
   address?: string | null;
@@ -16,20 +20,23 @@ export interface Profile {
   is_location_set?: boolean;
 }
 
-// 상품 타입 (Supabase 스키마와 매칭)
+// 상품 상태 타입
+export type ProductStatus = 'active' | 'sold' | 'reserved';
+
+// 상품 타입
 export interface Product {
-  id: string; // UUID
-  user_id: string; // UUID
+  id: UUID;
+  user_id: UUID;
   title: string;
   description: string | null;
   price: number;
   location: string;
   image_url: string | null;
-  status: 'active' | 'sold' | 'reserved';
+  status: ProductStatus;
   likes_count: number;
   views_count: number;
-  created_at: string;
-  updated_at: string;
+  created_at: Timestamp;
+  updated_at: Timestamp;
   // 조인된 데이터
   profiles?: Profile;
 }

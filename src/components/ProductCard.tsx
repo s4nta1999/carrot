@@ -1,24 +1,25 @@
 import { Product } from '@/types';
-import Image from 'next/image';
 import Link from 'next/link';
 import { getTimeAgo, formatPrice } from '@/lib/utils';
+import OptimizedImage from './OptimizedImage';
+import { memo } from 'react';
 
 interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
-
+const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/products/${product.id}`} className="block">
       <div className="flex gap-4 p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700">
         {/* 상품 이미지 */}
         <div className="relative w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
-          <Image
+          <OptimizedImage
             src={product.image_url || '/images/placeholder.svg'}
             alt={product.title}
-            fill
-            className="object-cover"
+            width={80}
+            height={80}
+            className="w-full h-full"
             sizes="80px"
           />
         </div>
@@ -72,4 +73,6 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
     </Link>
   );
-} 
+});
+
+export default ProductCard; 

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ProductList from '@/components/ProductList';
 import MobileLayout from '@/components/MobileLayout';
 import { useProducts } from '@/contexts/ProductContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
+import { useSearchDebounce } from '@/hooks/useDebounce';
 
 export default function ProductsPage() {
   const { products, fetchProducts } = useProducts();
@@ -25,9 +26,10 @@ export default function ProductsPage() {
     }
   }, [profile?.location]);
   
-  // 검색 상태
+  // 검색 상태 (디바운스 적용)
   const [keyword, setKeyword] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const debouncedKeyword = useSearchDebounce(keyword, 300);
   
   // 정렬 상태
   const [sortType, setSortType] = useState('latest'); // latest, priceAsc, priceDesc, popular
@@ -41,11 +43,11 @@ export default function ProductsPage() {
     { value: 'popular', label: '인기순', icon: '❤️' },
   ];
 
-  // 필터링 및 정렬된 상품 리스트
-  const getSortedProducts = () => {
+  // 필터링 및 정렬된 상품 리스트 (메모이제이션 적용)
+  const sortedProducts = useMemo(() => {
     const filtered = products.filter(product =>
-      product.title.toLowerCase().includes(keyword.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(keyword.toLowerCase()))
+      product.title.toLowerCase().includes(debouncedKeyword.toLowerCase()) ||
+      (product.description && product.description.toLowerCase().includes(debouncedKeyword.toLowerCase()))
     );
 
     // 정렬 적용
@@ -60,9 +62,7 @@ export default function ProductsPage() {
       default:
         return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
-  };
-
-  const sortedProducts = getSortedProducts();
+  }, [products, debouncedKeyword, sortType]);
   const currentSortOption = sortOptions.find(option => option.value === sortType);
 
   // 헤더 액션 버튼들

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
 import { uploadImage } from '@/lib/supabase-storage';
-import { validateFileSize, validateImageType, isHeicFile } from '@/lib/utils';
+import { validateFileSize, validateImageType, isHeicFile } from '@/lib/image-utils';
 import Link from 'next/link';
 
 export default function CreateProductPage() {
