@@ -161,12 +161,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 소셜 로그인
   const signInWithProvider = async (provider: 'github' | 'kakao') => {
+    console.log(`🔐 ${provider} 로그인 시작...`);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/products`
+        redirectTo: `${window.location.origin}/products`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
       }
     });
+
+    if (error) {
+      console.error(`❌ ${provider} 로그인 오류:`, error);
+    } else {
+      console.log(`✅ ${provider} 로그인 성공 - 리다이렉트 대기 중...`);
+    }
 
     return { error };
   };
