@@ -12,11 +12,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* 다크모드 클래스가 있을 때만 적용 */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+/* 라이트모드 클래스가 있을 때만 적용 */
+.light {
+  --background: #ffffff;
+  --foreground: #171717;
 }
 
 body {

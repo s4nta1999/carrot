@@ -26,6 +26,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // 초기 로딩 시 HTML 클래스 설정
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as Theme;
+    const initialTheme = savedTheme || 'dark';
+    
+    const html = document.documentElement;
+    if (initialTheme === 'dark') {
+      html.classList.add('dark');
+      html.classList.remove('light');
+    } else {
+      html.classList.add('light');
+      html.classList.remove('dark');
+    }
+  }, []);
+
   // 테마 변경 시 localStorage 저장 및 HTML 클래스 적용
   useEffect(() => {
     localStorage.setItem('theme', theme);

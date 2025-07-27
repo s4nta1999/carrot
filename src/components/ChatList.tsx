@@ -59,10 +59,10 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
           아직 채팅이 없어요
         </h3>
-        <p className="text-gray-500">
+        <p className="text-gray-500 dark:text-gray-400">
           관심 있는 상품에서 채팅을 시작해보세요!
         </p>
       </div>
@@ -70,7 +70,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
   }
 
   return (
-    <div className="divide-y divide-gray-200">
+    <div className="divide-y divide-gray-200 dark:divide-gray-700">
       {chatRooms.map((chatRoom) => {
         const otherUser = getOtherUser(chatRoom);
         const lastMessage = chatRoom.last_message;
@@ -79,7 +79,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
           <div
             key={chatRoom.id}
             onClick={() => onSelectChat(chatRoom)}
-            className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+            className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
           >
             <div className="flex items-center space-x-3">
               {/* 상품 이미지 */}
@@ -94,20 +94,20 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
               {/* 채팅 정보 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium text-gray-900 truncate">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {otherUser?.username || '사용자'}
                   </h4>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {lastMessage && getTimeAgo(lastMessage.created_at)}
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-600 truncate mb-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 truncate mb-1">
                   {chatRoom.products?.title}
                 </p>
 
                 {lastMessage && (
-                  <p className="text-sm text-gray-500 truncate">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {lastMessage.sender_id === user?.id ? '나: ' : ''}
                     {lastMessage.content}
                   </p>
@@ -116,7 +116,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
 
               {/* 가격 및 읽지 않은 메시지 */}
               <div className="text-right flex-shrink-0">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {formatPrice(chatRoom.products?.price || 0)}
                 </p>
                 
