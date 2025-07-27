@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useChat } from '@/contexts/ChatContext';
+import ThemeToggle from './ThemeToggle';
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -25,25 +26,26 @@ export default function MobileLayout({
   const { getUnreadMessagesCount } = useChat();
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 relative overflow-hidden">
+    <div className="h-screen flex flex-col bg-gray-900 dark:bg-gray-900 bg-white relative overflow-hidden">
       {/* 상단 헤더 - 고정 */}
-      <header className="bg-gray-900 border-b border-gray-700 flex-shrink-0 z-10">
+      <header className="bg-gray-900 dark:bg-gray-900 bg-white border-b border-gray-700 dark:border-gray-700 border-gray-200 flex-shrink-0 z-10">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center">
             {showBackButton ? (
               <button onClick={() => router.back()} className="p-2 mr-2">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-white dark:text-white text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
             ) : null}
-            <h1 className="text-lg font-bold text-white">{title}</h1>
+            <h1 className="text-lg font-bold text-white dark:text-white text-gray-900">{title}</h1>
           </div>
           
           <div className="flex items-center gap-4">
+            <ThemeToggle size="sm" />
             {showSearchButton && (
               <button className="p-2">
-                <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-300 dark:text-gray-300 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
@@ -54,21 +56,21 @@ export default function MobileLayout({
       </header>
 
       {/* 콘텐츠 영역 - 스크롤 가능 */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
         {children}
       </main>
 
             {/* 하단 네비게이션 - 고정 */}
       {!hideBottomNav && (
-        <nav className="bg-gray-900 border-t border-gray-700 flex-shrink-0">
+        <nav className="bg-gray-900 dark:bg-gray-900 bg-white border-t border-gray-700 dark:border-gray-700 border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-around py-2">
-            {/* 홈 */}
-            <Link 
-              href="/products" 
-              className={`flex flex-col items-center py-2 ${
-                pathname === '/products' ? 'text-orange-500' : 'text-gray-400'
-              }`}
-            >
+                      {/* 홈 */}
+          <Link 
+            href="/products" 
+            className={`flex flex-col items-center py-2 ${
+              pathname === '/products' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-400'
+            }`}
+          >
             <svg className="w-6 h-6 mb-1" fill={pathname === '/products' ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
             </svg>
@@ -76,7 +78,7 @@ export default function MobileLayout({
           </Link>
           
           {/* 동네생활 */}
-          <button className="flex flex-col items-center py-2 text-gray-400">
+          <button className="flex flex-col items-center py-2 text-gray-400 dark:text-gray-400">
             <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
             </svg>
@@ -87,7 +89,7 @@ export default function MobileLayout({
           <Link 
             href="/map" 
             className={`flex flex-col items-center py-2 ${
-              pathname === '/map' ? 'text-orange-500' : 'text-gray-400'
+              pathname === '/map' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-400'
             }`}
           >
             <svg 
@@ -106,7 +108,7 @@ export default function MobileLayout({
           <Link 
             href="/chat" 
             className={`flex flex-col items-center py-2 relative ${
-              pathname === '/chat' ? 'text-orange-500' : 'text-gray-400'
+              pathname === '/chat' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-400'
             }`}
           >
             <svg 
@@ -129,7 +131,7 @@ export default function MobileLayout({
           <Link 
             href="/profile" 
             className={`flex flex-col items-center py-2 ${
-              pathname === '/profile' ? 'text-orange-500' : 'text-gray-400'
+              pathname === '/profile' ? 'text-orange-500' : 'text-gray-400 dark:text-gray-400'
             }`}
           >
             <svg 

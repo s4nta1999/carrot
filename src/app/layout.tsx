@@ -4,6 +4,7 @@ import "./globals.css";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,13 +40,15 @@ export default function RootLayout({
       >
         {/* 모바일 컨테이너 */}
         <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl">
-          <AuthProvider>
-            <ProductProvider>
-              <ChatProvider>
-                {children}
-              </ChatProvider>
-            </ProductProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <ProductProvider>
+                <ChatProvider>
+                  {children}
+                </ChatProvider>
+              </ProductProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </div>
       </body>
     </html>
