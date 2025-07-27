@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 ```
 
 #### 주요 특징
-- **GitHub OAuth**: 소셜 로그인으로 간편한 가입
+- **이메일/비밀번호 로그인**: 간단하고 안정적인 인증 시스템
 - **자동 프로필 생성**: 로그인 시 자동으로 프로필 테이블 생성
 - **세션 관리**: Supabase Auth의 자동 세션 관리
 - **위치 설정 가이드**: 첫 로그인 시 위치 설정 안내

@@ -5,7 +5,7 @@
 ### **Supabase Dashboard 접속**
 1. https://supabase.com 접속
 2. "Start your project" 클릭
-3. GitHub/Google 계정으로 로그인
+3. 이메일/비밀번호로 로그인
 4. "New project" 클릭
 
 ### **프로젝트 설정**
