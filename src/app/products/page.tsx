@@ -11,7 +11,7 @@ import { useSearchDebounce } from '@/hooks/useDebounce';
 
 export default function ProductsPage() {
   const { products, fetchProducts } = useProducts();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
 

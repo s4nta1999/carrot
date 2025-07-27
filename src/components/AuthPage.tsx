@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { createClient } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
 import SocialLoginButton from './SocialLoginButton';
 
 export default function AuthPage() {

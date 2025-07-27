@@ -491,22 +491,28 @@ const AppState = {
 .font-body { font-family: 'Pretendard', sans-serif; }
 ```
 
-## 📊 성능 지표
+## 📊 성능 지표 (실제 측정값)
 
-### 로딩 성능
+### 번들 크기 (실제 빌드 결과)
+- **JavaScript 총 크기**: ~1.2MB (압축 전)
+  - **Framework**: 180KB (Next.js + React)
+  - **Main Bundle**: 116KB (앱 메인 로직)
+  - **Polyfills**: 112KB (브라우저 호환성)
+  - **기타 청크들**: ~800KB (기능별 분할)
+- **CSS**: 32KB (Tailwind CSS 최적화)
+- **이미지**: WebP/AVIF 자동 변환 지원
+
+### 코드 분할 최적화
+- **메인 번들**: 116KB (핵심 기능)
+- **기능별 분할**: 12-60KB (페이지별 지연 로딩)
+- **공통 라이브러리**: 180KB (React, Next.js)
+
+### 성능 목표 (기준값)
 - **First Contentful Paint**: < 1.5초
 - **Largest Contentful Paint**: < 2.5초
 - **Cumulative Layout Shift**: < 0.1
-
-### 번들 크기
-- **JavaScript**: ~200KB (gzipped)
-- **CSS**: ~50KB (gzipped)
-- **이미지**: WebP/AVIF 자동 변환
-
-### 데이터베이스 성능
 - **쿼리 응답 시간**: < 100ms
 - **실시간 업데이트**: < 50ms
-- **동시 사용자**: 1000+ 지원
 
 ---
 
