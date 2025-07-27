@@ -107,6 +107,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
 
       setCurrentMessages(data || []);
+
+      // 메시지를 가져온 후 읽음 처리 (카카오톡 스타일)
+      if (data && data.length > 0 && user) {
+        const unreadMessages = data.filter(msg => 
+          msg.sender_id !== user.id && !msg.is_read
+        );
+
+        if (unreadMessages.length > 0) {
+          console.log(`${unreadMessages.length}개의 읽지 않은 메시지를 읽음 처리`);
+          await Promise.all(
+            unreadMessages.map(msg => markAsRead(msg.id))
+          );
+        }
+      }
     } catch (err) {
       console.error('메시지 가져오기 오류:', err);
       setError(err instanceof Error ? err.message : '메시지를 불러올 수 없습니다.');

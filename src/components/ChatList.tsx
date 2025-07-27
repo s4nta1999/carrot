@@ -131,7 +131,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
                 )}
               </div>
 
-              {/* 가격 */}
+              {/* 가격 및 읽지 않은 메시지 */}
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-semibold text-gray-900">
                   {chatRoom.products?.price === 0 
@@ -140,12 +140,14 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
                   }
                 </p>
                 
-                {/* 읽지 않은 메시지 뱃지 (향후 구현) */}
-                {/* {unreadCount > 0 && (
+                {/* 읽지 않은 메시지 뱃지 (카카오톡 스타일) */}
+                {lastMessage && 
+                 lastMessage.sender_id !== user?.id && 
+                 !lastMessage.is_read && (
                   <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center mt-1">
-                    <span className="text-xs text-white font-bold">{unreadCount}</span>
+                    <span className="text-xs text-white font-bold">1</span>
                   </div>
-                )} */}
+                )}
               </div>
             </div>
           </div>
