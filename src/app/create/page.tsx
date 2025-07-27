@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
+import { uploadImage } from '@/lib/supabase-storage';
 import Link from 'next/link';
 
 export default function CreateProductPage() {
@@ -13,12 +14,12 @@ export default function CreateProductPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<{ file: File; preview: string; uploaded?: boolean; url?: string }[]>([]);
   const [isAiEnabled, setIsAiEnabled] = useState(false);
   const [saleType, setSaleType] = useState<'sell' | 'share'>('sell');
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // 간단한 이미지 업로드 처리
+  // 이미지 업로드 처리 (Supabase Storage 사용)
   const handleImageUpload = (files: FileList) => {
     Array.from(files).forEach(file => {
       // 이미지 파일만 허용
@@ -39,11 +40,16 @@ export default function CreateProductPage() {
         return;
       }
 
+      // 미리보기 생성
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
         if (result) {
-          setImages(prev => [...prev.slice(0, 9), result]); // 최대 10개까지
+          setImages(prev => [...prev.slice(0, 9), { 
+            file, 
+            preview: result,
+            uploaded: false 
+          }]); // 최대 10개까지
         }
       };
       reader.readAsDataURL(file);
@@ -96,11 +102,25 @@ export default function CreateProductPage() {
     setIsSubmitting(true);
 
     try {
+      // 이미지 업로드 처리
+      let imageUrl: string = '/images/placeholder.svg';
+      
+      if (images.length > 0) {
+        const uploadResult = await uploadImage(images[0].file);
+        if (uploadResult.success && uploadResult.url) {
+          imageUrl = uploadResult.url;
+        } else {
+          alert('이미지 업로드에 실패했습니다: ' + uploadResult.error);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       const newProduct = {
         title: title.trim(),
         description: description.trim(),
         price: saleType === 'share' ? 0 : Number(price),
-        image_url: images.length > 0 ? images[0] : '/images/placeholder.svg'
+        image_url: imageUrl || '/images/placeholder.svg'
       };
 
       const { success, error } = await addProduct(newProduct);
@@ -202,7 +222,7 @@ export default function CreateProductPage() {
               {images.map((image, index) => (
                 <div key={index} className="relative min-w-[100px] h-[100px]">
                   <img
-                    src={image}
+                    src={image.preview}
                     alt={`업로드된 이미지 ${index + 1}`}
                     className="w-full h-full object-cover rounded-lg"
                   />
