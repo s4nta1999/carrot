@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
 import { uploadImage } from '@/lib/supabase-storage';
 import { validateFileSize, validateImageType, isHeicFile } from '@/lib/image-utils';
+import { generateAiProduct } from '@/lib/ai-utils';
 import Link from 'next/link';
 
 export default function CreateProductPage() {
@@ -19,6 +20,8 @@ export default function CreateProductPage() {
   const [isAiEnabled, setIsAiEnabled] = useState(false);
   const [saleType, setSaleType] = useState<'sell' | 'share'>('sell');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // 이미지 업로드 처리 (Supabase Storage 사용)
   const handleImageUpload = (files: FileList) => {
@@ -82,6 +85,31 @@ export default function CreateProductPage() {
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // AI 작성 기능
+  const handleAiGenerate = async () => {
+    if (!aiInput.trim()) {
+      alert('AI 작성할 내용을 입력해주세요.');
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      // AI로 제목과 설명 생성
+      const aiResult = generateAiProduct(aiInput, price ? Number(price) : undefined);
+      
+      setTitle(aiResult.title);
+      setDescription(aiResult.description);
+      
+      alert('AI 작성이 완료되었습니다!');
+    } catch (error) {
+      console.error('AI 작성 오류:', error);
+      alert('AI 작성 중 오류가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleSubmit = async () => {
     // 기본 검증
@@ -176,25 +204,51 @@ export default function CreateProductPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-6">
           {/* AI 작성하기 토글 */}
-          <div className="bg-purple-600 rounded-xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-700 px-2 py-1 rounded text-xs font-medium">
-                ✨ Beta
+          <div className="bg-purple-600 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-purple-700 px-2 py-1 rounded text-xs font-medium">
+                  ✨ Beta
+                </div>
+                <span className="font-medium">AI로 작성하기</span>
               </div>
-              <span className="font-medium">AI로 작성하기</span>
-            </div>
-            <div 
-              className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-200 ${
-                isAiEnabled ? 'bg-white' : 'bg-gray-400'
-              }`}
-              onClick={() => setIsAiEnabled(!isAiEnabled)}
-            >
               <div 
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-purple-600 rounded-full transition-transform duration-200 ${
-                  isAiEnabled ? 'translate-x-6' : 'translate-x-0'
+                className={`relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-200 ${
+                  isAiEnabled ? 'bg-white' : 'bg-gray-400'
                 }`}
-              />
+                onClick={() => setIsAiEnabled(!isAiEnabled)}
+              >
+                <div 
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-purple-600 rounded-full transition-transform duration-200 ${
+                    isAiEnabled ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+              </div>
             </div>
+            
+            {/* AI 입력 영역 */}
+            {isAiEnabled && (
+              <div className="space-y-3">
+                <textarea
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  placeholder="상품에 대해 간단히 설명해주세요. 예: 아이폰 13 새상품, 깨끗한 의자, 사용한 책 등"
+                  className="w-full p-3 bg-purple-700 rounded-lg text-white placeholder-gray-300 resize-none"
+                  rows={3}
+                />
+                <button
+                  onClick={handleAiGenerate}
+                  disabled={isGenerating || !aiInput.trim()}
+                  className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                    isGenerating || !aiInput.trim()
+                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                      : 'bg-white text-purple-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {isGenerating ? '🤖 AI 작성 중...' : '✨ AI로 작성하기'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 사진 업로드 */}
