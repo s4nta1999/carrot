@@ -10,13 +10,20 @@ import { useRouter } from 'next/navigation';
 
 export default function ProductsPage() {
   const { products, fetchProducts } = useProducts();
+  const { user, profile } = useAuth();
   const { unreadCount } = useNotifications();
   const router = useRouter();
 
-  // 페이지 마운트시 상품 목록 새로고침
+  // 페이지 마운트시 상품 목록 새로고침 (사용자 위치 기반)
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (profile?.location) {
+      console.log('📍 사용자 위치 기반 상품 필터링:', profile.location);
+      fetchProducts(profile.location);
+    } else {
+      console.log('📍 위치 정보 없음 - 전체 상품 표시');
+      fetchProducts();
+    }
+  }, [profile?.location]);
   
   // 검색 상태
   const [keyword, setKeyword] = useState('');
@@ -128,9 +135,17 @@ export default function ProductsPage() {
     </>
   );
 
+  // 사용자 위치 기반 제목 생성
+  const getLocationTitle = () => {
+    if (profile?.location) {
+      return `${profile.location}`;
+    }
+    return "전체 상품";
+  };
+
   return (
     <MobileLayout 
-      title="합정동 ▼"
+      title={getLocationTitle()}
       headerActions={headerActions}
     >
       {/* 검색바 */}

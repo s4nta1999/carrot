@@ -17,13 +17,13 @@ export function ProductProvider({ children }: { children: ReactNode }) {
 
 
 
-  // 상품 목록 가져오기
-  const fetchProducts = async () => {
+  // 상품 목록 가져오기 (지역별 필터링)
+  const fetchProducts = async (userLocation?: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('products')
         .select(`
           *,
@@ -34,8 +34,14 @@ export function ProductProvider({ children }: { children: ReactNode }) {
             temperature
           )
         `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
+
+      // 사용자 위치가 있으면 해당 지역 상품만 필터링
+      if (userLocation) {
+        query = query.eq('profiles.location', userLocation);
+      }
+
+      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
 
       if (fetchError) {
         throw new Error(fetchError.message);

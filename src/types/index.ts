@@ -99,7 +99,7 @@ export interface ProductContextType {
   products: Product[];
   loading: boolean;
   error: string | null;
-  fetchProducts: () => Promise<void>;
+  fetchProducts: (userLocation?: string) => Promise<void>;
   addProduct: (product: CreateProductData) => Promise<{ success: boolean; error?: string }>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<{ success: boolean; error?: string }>;
   deleteProduct: (id: string) => Promise<{ success: boolean; error?: string }>;

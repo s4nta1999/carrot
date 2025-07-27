@@ -30,7 +30,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h3>
           
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <span>{product.location}</span>
+            <span>{product.profiles?.location || product.location || '위치 정보 없음'}</span>
             <span>•</span>
             <span>{getTimeAgo(product.created_at)}</span>
           </div>
