@@ -79,6 +79,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // 프로필이 없으면 자동 생성
               if (!profile) {
                 console.log('🆕 새 사용자 프로필 생성 중...');
+                console.log('👤 사용자 정보:', {
+                  id: session.user.id,
+                  email: session.user.email,
+                  metadata: session.user.user_metadata
+                });
+                
                 try {
                   const { data: newProfile, error: createError } = await supabase
                     .from('profiles')
@@ -88,19 +94,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                       avatar_url: session.user.user_metadata?.avatar_url,
                       location: '위치 정보 없음',
                       temperature: 36.5,
-                      is_location_set: false
+                      is_location_set: false,
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString()
                     })
                     .select()
                     .single();
 
                   if (createError) {
-                    console.error('프로필 생성 오류:', createError);
+                    console.error('❌ 프로필 생성 오류:', createError);
+                    console.error('❌ 에러 코드:', createError.code);
+                    console.error('❌ 에러 메시지:', createError.message);
+                    console.error('❌ 에러 상세:', createError.details);
+                    console.error('❌ 에러 힌트:', createError.hint);
                   } else {
                     console.log('✅ 프로필 생성 완료:', newProfile);
                     profile = newProfile;
                   }
                 } catch (error) {
-                  console.error('프로필 생성 예외:', error);
+                  console.error('❌ 프로필 생성 예외:', error);
+                  console.error('❌ 예외 타입:', typeof error);
+                  console.error('❌ 예외 내용:', JSON.stringify(error, null, 2));
                 }
               }
               
@@ -148,6 +162,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 프로필이 없으면 자동 생성
           if (!profile) {
             console.log('🆕 새 사용자 프로필 생성 중...');
+            console.log('👤 사용자 정보:', {
+              id: session.user.id,
+              email: session.user.email,
+              metadata: session.user.user_metadata
+            });
+            
             try {
               const { data: newProfile, error: createError } = await supabase
                 .from('profiles')
@@ -157,19 +177,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   avatar_url: session.user.user_metadata?.avatar_url,
                   location: '위치 정보 없음',
                   temperature: 36.5,
-                  is_location_set: false
+                  is_location_set: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
                 })
                 .select()
                 .single();
 
               if (createError) {
-                console.error('프로필 생성 오류:', createError);
+                console.error('❌ 프로필 생성 오류:', createError);
+                console.error('❌ 에러 코드:', createError.code);
+                console.error('❌ 에러 메시지:', createError.message);
+                console.error('❌ 에러 상세:', createError.details);
+                console.error('❌ 에러 힌트:', createError.hint);
               } else {
                 console.log('✅ 프로필 생성 완료:', newProfile);
                 profile = newProfile;
               }
             } catch (error) {
-              console.error('프로필 생성 예외:', error);
+              console.error('❌ 프로필 생성 예외:', error);
+              console.error('❌ 예외 타입:', typeof error);
+              console.error('❌ 예외 내용:', JSON.stringify(error, null, 2));
             }
           }
           
