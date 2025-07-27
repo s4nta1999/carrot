@@ -12,12 +12,18 @@ export default function HomePage() {
   useEffect(() => {
     // 로딩이 완료되고 사용자가 로그인되어 있으면
     if (!loading && user) {
+      console.log('🔍 사용자 상태 확인:', { user: user.id, profile: profile?.id });
+      console.log('📍 위치 설정 상태:', profile?.is_location_set);
+      
       // 위치 설정을 하지 않은 사용자는 위치 설정 페이지로
       if (profile && !profile.is_location_set) {
+        console.log('🚀 위치 설정 페이지로 리다이렉트');
         router.push('/location-setup');
-      } else {
-        // 위치 설정이 완료된 사용자는 products 페이지로
+      } else if (profile && profile.is_location_set) {
+        console.log('🏠 상품 페이지로 리다이렉트');
         router.push('/products');
+      } else {
+        console.log('⏳ 프로필 로딩 대기 중...');
       }
     }
   }, [user, profile, loading, router]);

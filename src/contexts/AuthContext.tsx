@@ -74,7 +74,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (session?.user) {
             try {
-              const profile = await fetchProfile(session.user.id);
+              let profile = await fetchProfile(session.user.id);
+              
+              // 프로필이 없으면 자동 생성
+              if (!profile) {
+                console.log('🆕 새 사용자 프로필 생성 중...');
+                try {
+                  const { data: newProfile, error: createError } = await supabase
+                    .from('profiles')
+                    .insert({
+                      id: session.user.id,
+                      username: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '사용자',
+                      avatar_url: session.user.user_metadata?.avatar_url,
+                      location: '위치 정보 없음',
+                      temperature: 36.5,
+                      is_location_set: false
+                    })
+                    .select()
+                    .single();
+
+                  if (createError) {
+                    console.error('프로필 생성 오류:', createError);
+                  } else {
+                    console.log('✅ 프로필 생성 완료:', newProfile);
+                    profile = newProfile;
+                  }
+                } catch (error) {
+                  console.error('프로필 생성 예외:', error);
+                }
+              }
+              
               if (isMounted) {
                 setProfile(profile);
               }
@@ -114,7 +143,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
+          let profile = await fetchProfile(session.user.id);
+          
+          // 프로필이 없으면 자동 생성
+          if (!profile) {
+            console.log('🆕 새 사용자 프로필 생성 중...');
+            try {
+              const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  username: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '사용자',
+                  avatar_url: session.user.user_metadata?.avatar_url,
+                  location: '위치 정보 없음',
+                  temperature: 36.5,
+                  is_location_set: false
+                })
+                .select()
+                .single();
+
+              if (createError) {
+                console.error('프로필 생성 오류:', createError);
+              } else {
+                console.log('✅ 프로필 생성 완료:', newProfile);
+                profile = newProfile;
+              }
+            } catch (error) {
+              console.error('프로필 생성 예외:', error);
+            }
+          }
+          
           if (isMounted) {
             setProfile(profile);
           }
@@ -163,24 +221,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithProvider = async (provider: 'github' | 'kakao') => {
     console.log(`🔐 ${provider} 로그인 시작...`);
     
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/products`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/products`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
+      });
+
+      if (error) {
+        console.error(`❌ ${provider} 로그인 오류:`, error);
+        return { error };
       }
-    });
 
-    if (error) {
-      console.error(`❌ ${provider} 로그인 오류:`, error);
-    } else {
-      console.log(`✅ ${provider} 로그인 성공 - 리다이렉트 대기 중...`);
+      console.log(`✅ ${provider} 로그인 성공:`, data);
+      console.log(`📍 리다이렉트 URL: ${window.location.origin}/products`);
+      return { error: null };
+    } catch (error) {
+      console.error(`❌ ${provider} 로그인 예외:`, error);
+      return { error: error as AuthError };
     }
-
-    return { error };
   };
 
   // 로그아웃

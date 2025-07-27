@@ -18,18 +18,30 @@ export default function SocialLoginButton({ provider, className = '' }: SocialLo
     setIsLoading(true);
     
     try {
+      console.log('🔐 소셜 로그인 시작:', provider);
       const { error } = await signInWithProvider(provider);
+      
       if (error) {
-        console.error('소셜 로그인 오류:', error);
-        alert('소셜 로그인에 실패했습니다.');
+        console.error('❌ 소셜 로그인 오류:', error);
+        console.error('❌ 에러 메시지:', error.message);
+        console.error('❌ 에러 상태:', error.status);
+        
+        // 사용자에게 더 구체적인 에러 메시지 표시
+        let errorMessage = '소셜 로그인에 실패했습니다.';
+        if (error.message.includes('redirect_uri')) {
+          errorMessage = 'OAuth 설정 오류입니다. 관리자에게 문의하세요.';
+        } else if (error.message.includes('network')) {
+          errorMessage = '네트워크 연결을 확인해주세요.';
+        }
+        
+        alert(errorMessage);
         setIsLoading(false);
       } else {
-        // 성공 시 리다이렉트 페이지 표시
-        console.log('GitHub 로그인 성공 - 리다이렉트 페이지 표시');
+        console.log('✅ 소셜 로그인 성공 - 리다이렉트 대기 중...');
         setShowRedirect(true);
       }
     } catch (error) {
-      console.error('소셜 로그인 예외:', error);
+      console.error('❌ 소셜 로그인 예외:', error);
       alert('소셜 로그인 중 오류가 발생했습니다.');
       setIsLoading(false);
     }
