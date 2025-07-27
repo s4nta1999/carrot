@@ -58,6 +58,8 @@ export default function OptimizedImage({
         sizes={sizes}
         onError={handleError}
         onLoad={handleLoad}
+        loading={priority ? 'eager' : 'lazy'}
+        quality={85}
       />
     </div>
   );
