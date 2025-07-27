@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
 import { uploadImage } from '@/lib/supabase-storage';
+import { validateFileSize, validateImageType, isHeicFile } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function CreateProductPage() {
@@ -22,20 +23,20 @@ export default function CreateProductPage() {
   // 이미지 업로드 처리 (Supabase Storage 사용)
   const handleImageUpload = (files: FileList) => {
     Array.from(files).forEach(file => {
-      // 이미지 파일만 허용
-      if (!file.type.startsWith('image/')) {
+      // 이미지 파일 타입 검증
+      if (!validateImageType(file)) {
         alert('이미지 파일만 업로드 가능합니다.');
         return;
       }
 
       // HEIC 파일 감지
-      if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+      if (isHeicFile(file)) {
         alert('HEIC 파일은 지원되지 않습니다. JPG, PNG 형식으로 변환해주세요.');
         return;
       }
 
       // 파일 크기 제한 (5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      if (!validateFileSize(file, 5)) {
         alert('파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.');
         return;
       }

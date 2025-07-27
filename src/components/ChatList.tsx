@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChatRoom } from '@/types';
+import { getTimeAgo, formatPrice } from '@/lib/utils';
 
 interface ChatListProps {
   onSelectChat: (chatRoom: ChatRoom) => void;
@@ -19,25 +20,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
     }
   }, [user]);
 
-  // 시간 경과 계산
-  const getTimeAgo = (dateString: string): string => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
 
-    if (diffInMinutes < 1) return '방금 전';
-    if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}시간 전`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 30) return `${diffInDays}일 전`;
-    
-    const diffInMonths = Math.floor(diffInDays / 30);
-    return `${diffInMonths}달 전`;
-  };
 
   // 상대방 정보 가져오기
   const getOtherUser = (chatRoom: ChatRoom) => {
@@ -134,10 +117,7 @@ export default function ChatList({ onSelectChat }: ChatListProps) {
               {/* 가격 및 읽지 않은 메시지 */}
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-semibold text-gray-900">
-                  {chatRoom.products?.price === 0 
-                    ? '나눔' 
-                    : `${chatRoom.products?.price?.toLocaleString()}원`
-                  }
+                  {formatPrice(chatRoom.products?.price || 0)}
                 </p>
                 
                 {/* 읽지 않은 메시지 뱃지 (카카오톡 스타일) */}

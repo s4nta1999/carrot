@@ -3,23 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase';
-
-interface Profile {
-  id: string;
-  username: string | null;
-  avatar_url: string | null;
-  location: string;
-  temperature: number;
-  created_at: string;
-  updated_at: string;
-  // 위치 정보 추가
-  latitude?: number | null;
-  longitude?: number | null;
-  address?: string | null;
-  district?: string | null;
-  city?: string | null;
-  is_location_set?: boolean;
-}
+import { Profile } from '@/types';
 
 interface AuthContextType {
   user: User | null;
