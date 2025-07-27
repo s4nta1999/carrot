@@ -5,31 +5,26 @@ const supabase = createClient();
 // 이미지 업로드 함수
 export const uploadImage = async (file, bucketName = 'product-images') => {
   try {
-    // 파일명 생성 (중복 방지)
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    
-    // Supabase Storage에 업로드
-    const { data, error } = await supabase.storage
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error } = await supabase.storage
       .from(bucketName)
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+      .upload(filePath, file);
 
     if (error) {
       throw error;
     }
 
-    // 공개 URL 생성
     const { data: { publicUrl } } = supabase.storage
       .from(bucketName)
-      .getPublicUrl(fileName);
+      .getPublicUrl(filePath);
 
-    return { success: true, url: publicUrl, fileName };
+    return publicUrl;
   } catch (error) {
     console.error('이미지 업로드 오류:', error);
-    return { success: false, error: error.message };
+    throw error;
   }
 };
 
