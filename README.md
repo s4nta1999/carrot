@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Supabase Auth 상태 구독
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
         setUser(session?.user ?? null);
         setLoading(false);
       }
@@ -138,283 +138,207 @@ export const generateAiProduct = (userInput: string, price?: number): AiProductD
 #### 카테고리 분류 로직
 ```typescript
 const suggestCategory = (description: string): string => {
-  const lowerDesc = description.toLowerCase();
+  const keywords = description.toLowerCase();
   
-  if (lowerDesc.includes('아이폰') || lowerDesc.includes('갤럭시') || 
-      lowerDesc.includes('노트북') || lowerDesc.includes('컴퓨터')) {
+  if (keywords.includes('폰') || keywords.includes('전화') || keywords.includes('컴퓨터')) {
     return '전자기기';
+  } else if (keywords.includes('옷') || keywords.includes('신발') || keywords.includes('가방')) {
+    return '의류';
+  } else if (keywords.includes('책') || keywords.includes('교재') || keywords.includes('소설')) {
+    return '도서';
   }
   
-  if (lowerDesc.includes('의자') || lowerDesc.includes('테이블') || 
-      lowerDesc.includes('소파') || lowerDesc.includes('가구')) {
-    return '가구';
-  }
-  
-  // ... 더 많은 분류 로직
   return '기타';
 };
 ```
 
 ### 💬 **실시간 채팅 시스템**
 
-#### Supabase Realtime 구현
+#### 구현 방법
 ```typescript
 // src/contexts/ChatContext.tsx
-useEffect(() => {
-  // 1. 채팅방 목록 실시간 구독
-  const channel = supabase
-    .channel('chat_rooms')
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'chat_rooms' },
-      (payload) => {
-        // 채팅방 목록 업데이트
-        handleChatRoomUpdate(payload);
-      }
-    )
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'messages' },
-      (payload) => {
-        // 메시지 실시간 업데이트
-        handleMessageUpdate(payload);
-      }
-    )
-    .subscribe();
+export function ChatProvider({ children }: { children: ReactNode }) {
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, []);
+  useEffect(() => {
+    // 실시간 메시지 구독
+    const channel = supabase
+      .channel('messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages'
+      }, (payload) => {
+        // 새 메시지 처리
+        handleNewMessage(payload.new as Message);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+}
 ```
 
-#### 읽지 않은 메시지 관리
-```typescript
-// src/hooks/useNotifications.ts
-export const useNotifications = () => {
-  const [unreadCount, setUnreadCount] = useState(0);
-  
-  const markAsRead = async (chatRoomId: string) => {
-    await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('chat_room_id', chatRoomId)
-      .eq('sender_id', '!=', user.id);
-      
-    // 읽지 않은 메시지 카운트 업데이트
-    updateUnreadCount();
-  };
-  
-  return { unreadCount, markAsRead };
-};
-```
+#### 주요 기능
+- **실시간 메시지**: Supabase Realtime을 통한 즉시 메시지 전송
+- **읽지 않은 메시지**: 배지로 표시되는 읽지 않은 메시지 수
+- **채팅방 관리**: 상품별 자동 채팅방 생성
+- **메시지 히스토리**: 과거 대화 내용 저장 및 표시
 
-### 🗺️ **지도 기반 서비스**
+### 🗺️ **지도 기반 위치 서비스**
 
-#### OpenStreetMap + Leaflet 구현
+#### 구현 방법
 ```typescript
 // src/app/map/page.tsx
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 
-const MapPage = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+export default function MapPage() {
+  const [sellers, setSellers] = useState<Profile[]>([]);
   
-  // 1. 사용자 위치 기반 상품 필터링
-  const nearbyProducts = useMemo(() => {
-    return products.filter(product => {
-      const distance = calculateDistance(
-        userLocation.lat, userLocation.lng,
-        product.profiles?.latitude, product.profiles?.longitude
-      );
-      return distance <= 5; // 5km 이내
-    });
-  }, [products, userLocation]);
-  
+  useEffect(() => {
+    // 사용자 위치 기반 판매자 검색
+    const fetchNearbySellers = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null);
+      
+      setSellers(data || []);
+    };
+    
+    fetchNearbySellers();
+  }, []);
+
   return (
-    <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={13}>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
-      {nearbyProducts.map(product => (
-        <Marker
-          key={product.id}
-          position={[product.profiles?.latitude!, product.profiles?.longitude!]}
-        >
+    <MapContainer center={[37.5665, 126.9780]} zoom={13}>
+      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {sellers.map(seller => (
+        <Marker key={seller.id} position={[seller.latitude!, seller.longitude!]}>
           <Popup>
-            <ProductCard product={product} />
+            <div>
+              <h3>{seller.username}</h3>
+              <p>{seller.location}</p>
+            </div>
           </Popup>
         </Marker>
       ))}
     </MapContainer>
   );
-};
-```
-
-#### 거리 계산 알고리즘
-```typescript
-// src/lib/utils.ts
-export const calculateDistance = (
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
-): number => {
-  const R = 6371; // 지구 반지름 (km)
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-    
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c; // km 단위
-};
-```
-
-### 🔍 **검색 및 필터링 시스템**
-
-#### 디바운스 검색 구현
-```typescript
-// src/hooks/useDebounce.ts
-export function useSearchDebounce(searchTerm: string, delay: number = 300): string {
-  const [debouncedValue, setDebouncedValue] = useState(searchTerm);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(searchTerm);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchTerm, delay]);
-
-  return debouncedValue;
 }
 ```
 
-#### 정렬 및 필터링 로직
+#### 주요 기능
+- **OpenStreetMap**: 무료 오픈소스 지도 API 사용
+- **위치 기반 검색**: 사용자 위치 기준 근처 판매자 표시
+- **핀 클릭**: 판매자 정보 및 상품 목록 표시
+- **반응형 디자인**: 모바일 최적화된 지도 인터페이스
+
+### 🔍 **검색 및 필터링**
+
+#### 구현 방법
 ```typescript
 // src/app/products/page.tsx
-const sortedProducts = useMemo(() => {
-  let filtered = products.filter(product =>
-    product.title.toLowerCase().includes(debouncedKeyword.toLowerCase()) ||
-    (product.description && product.description.toLowerCase().includes(debouncedKeyword.toLowerCase()))
-  );
-
-  // 정렬 로직
-  switch (sortType) {
-    case 'price_asc':
-      return filtered.sort((a, b) => a.price - b.price);
-    case 'price_desc':
-      return filtered.sort((a, b) => b.price - a.price);
-    case 'latest':
-      return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    case 'popular':
-      return filtered.sort((a, b) => b.likes_count - a.likes_count);
-    default:
-      return filtered;
-  }
-}, [products, debouncedKeyword, sortType]);
-```
-
-### 📱 **모바일 최적화**
-
-#### 반응형 레이아웃
-```typescript
-// src/components/MobileLayout.tsx
-export default function MobileLayout({ children, title, showBackButton }: MobileLayoutProps) {
-  return (
-    <div className="h-screen flex flex-col bg-white relative overflow-hidden">
-      {/* 고정 헤더 */}
-      <header className="bg-white border-b border-gray-200 flex-shrink-0 z-10">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center">
-            {showBackButton && (
-              <button onClick={() => router.back()} className="p-2 mr-2">
-                <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
-            <h1 className="text-lg font-bold text-gray-900">{title}</h1>
-          </div>
-        </div>
-      </header>
-      
-      {/* 스크롤 가능한 메인 콘텐츠 */}
-      <main className="flex-1 overflow-y-auto bg-white">
-        {children}
-      </main>
-      
-      {/* 고정 하단 네비게이션 */}
-      <nav className="bg-white border-t border-gray-200 flex-shrink-0">
-        {/* 네비게이션 아이템들 */}
-      </nav>
-    </div>
-  );
+export default function ProductsPage() {
+  const [keyword, setKeyword] = useState('');
+  const [sortBy, setSortBy] = useState('date');
+  
+  // 디바운스된 검색
+  const debouncedKeyword = useSearchDebounce(keyword, 300);
+  
+  // 필터링 및 정렬
+  const filteredProducts = useMemo(() => {
+    let filtered = products;
+    
+    // 검색어 필터링
+    if (debouncedKeyword) {
+      filtered = filtered.filter(product =>
+        product.title.toLowerCase().includes(debouncedKeyword.toLowerCase()) ||
+        product.description?.toLowerCase().includes(debouncedKeyword.toLowerCase())
+      );
+    }
+    
+    // 정렬
+    if (sortBy === 'price-asc') {
+      filtered = [...filtered].sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'price-desc') {
+      filtered = [...filtered].sort((a, b) => b.price - a.price);
+    }
+    
+    return filtered;
+  }, [products, debouncedKeyword, sortBy]);
 }
 ```
 
-#### 터치 최적화
-```css
-/* 터치 영역 최적화 */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
+#### 주요 기능
+- **실시간 검색**: 디바운스된 키워드 검색
+- **가격 정렬**: 오름차순/내림차순 정렬
+- **날짜 정렬**: 최신순 정렬
+- **위치 기반 필터링**: 사용자 지역 상품만 표시
 
-/* 터치 피드백 */
-.touch-feedback:active {
-  transform: scale(0.95);
-  transition: transform 0.1s ease;
-}
+## 🛠️ 기술 스택
 
-/* 스크롤 최적화 */
-.smooth-scroll {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-```
+### **Frontend**
+- **Next.js 15.4.3**: React 기반 풀스택 프레임워크
+- **React 19.1.0**: 사용자 인터페이스 라이브러리
+- **TypeScript 5.0**: 타입 안전성 보장
+- **Tailwind CSS 4.0**: 유틸리티 기반 CSS 프레임워크
 
-## 🗄️ 데이터베이스 설계
+### **Backend & Database**
+- **Supabase**: PostgreSQL 기반 백엔드 서비스
+- **PostgreSQL**: 관계형 데이터베이스
+- **Supabase Auth**: 인증 시스템
+- **Supabase Storage**: 파일 저장소
+- **Supabase Realtime**: 실시간 기능
 
-### 테이블 구조
+### **External APIs**
+- **OpenStreetMap**: 무료 지도 서비스
+- **Nominatim**: 지오코딩 서비스
+- **React-Leaflet**: 지도 컴포넌트
+
+### **Development Tools**
+- **ESLint**: 코드 품질 관리
+- **Prettier**: 코드 포맷팅
+- **Vercel**: 배포 플랫폼
+
+## 📊 데이터베이스 설계
+
+### **핵심 테이블 구조**
 ```sql
 -- 사용자 프로필
 CREATE TABLE profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username TEXT,
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  username VARCHAR(100),
   avatar_url TEXT,
-  location TEXT NOT NULL,
-  temperature DECIMAL(3,1) DEFAULT 36.5,
+  location VARCHAR(100),
+  temperature DECIMAL(4,1) DEFAULT 36.5,
   latitude DECIMAL(10,8),
   longitude DECIMAL(11,8),
-  address TEXT,
-  district TEXT,
-  city TEXT,
-  is_location_set BOOLEAN DEFAULT FALSE,
+  is_location_set BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 상품
 CREATE TABLE products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
+  title VARCHAR(200) NOT NULL,
   description TEXT,
   price INTEGER NOT NULL DEFAULT 0,
-  location TEXT NOT NULL,
   image_url TEXT,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'sold', 'reserved')),
-  likes_count INTEGER DEFAULT 0,
-  views_count INTEGER DEFAULT 0,
+  location VARCHAR(100) NOT NULL,
+  status VARCHAR(20) DEFAULT 'active',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 채팅방
 CREATE TABLE chat_rooms (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
   buyer_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   seller_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -423,97 +347,115 @@ CREATE TABLE chat_rooms (
 
 -- 메시지
 CREATE TABLE messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   chat_room_id UUID REFERENCES chat_rooms(id) ON DELETE CASCADE,
   sender_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  is_read BOOLEAN DEFAULT FALSE,
+  is_read BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
 
-### 인덱스 최적화
-```sql
--- 검색 성능 향상
-CREATE INDEX idx_products_title ON products USING gin(to_tsvector('korean', title));
-CREATE INDEX idx_products_location ON products(location);
-CREATE INDEX idx_products_created_at ON products(created_at DESC);
+## 🎨 UI/UX 디자인 원칙
 
--- 채팅 성능 향상
-CREATE INDEX idx_messages_chat_room_id ON messages(chat_room_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
-```
+### **모바일 퍼스트 디자인**
+- **반응형 레이아웃**: 모든 화면 크기에서 최적화
+- **터치 친화적**: 모바일 터치 인터페이스 최적화
+- **직관적 네비게이션**: 하단 탭 바 기반 네비게이션
 
-## 🔧 기술적 구현 세부사항
+### **사용자 경험**
+- **로딩 상태**: 스켈레톤 로딩 및 스피너 표시
+- **에러 처리**: 친화적인 에러 메시지 및 복구 옵션
+- **성능 최적화**: 이미지 지연 로딩 및 코드 스플리팅
 
-### 상태 관리 아키텍처
-```typescript
-// Context 기반 상태 관리
-const AppState = {
-  Auth: AuthContext,      // 사용자 인증 상태
-  Product: ProductContext, // 상품 목록 및 필터링
-  Chat: ChatContext       // 채팅 상태 및 메시지
-};
-```
+### **접근성**
+- **키보드 네비게이션**: 키보드만으로 모든 기능 사용 가능
+- **스크린 리더**: ARIA 라벨 및 시맨틱 HTML 구조
+- **색상 대비**: WCAG 가이드라인 준수
 
-### 성능 최적화 전략
-1. **메모이제이션**: React.memo, useMemo, useCallback 활용
-2. **이미지 최적화**: WebP/AVIF 포맷, lazy loading
-3. **코드 분할**: 동적 임포트로 번들 크기 최적화
-4. **캐싱**: 브라우저 캐시 및 Supabase 캐싱 활용
+## 📈 성능 최적화
 
-### 보안 구현
-1. **Row Level Security (RLS)**: 데이터베이스 레벨 보안
-2. **입력 검증**: 클라이언트/서버 양쪽 검증
-3. **XSS 방지**: React의 자동 이스케이핑
-4. **CSRF 방지**: Supabase Auth의 토큰 기반 인증
+### **번들 최적화**
+- **JavaScript**: 총 ~1.2MB (압축 후)
+- **CSS**: 32KB (Tailwind CSS)
+- **이미지**: WebP/AVIF 포맷 지원
+- **코드 스플리팅**: 페이지별 자동 분할
 
-## 🎨 UI/UX 설계 원칙
-
-### 모바일 퍼스트 디자인
-- **터치 친화적**: 최소 44px 터치 영역
-- **스와이프 제스처**: 자연스러운 네비게이션
-- **하단 네비게이션**: 엄지손가락 접근성 고려
-- **로딩 상태**: 스켈레톤 UI 및 스피너
-
-### 색상 및 타이포그래피
-```css
-/* 브랜드 컬러 */
-:root {
-  --primary: #ff6b35;     /* 당근마켓 오렌지 */
-  --secondary: #f8f9fa;   /* 배경색 */
-  --text-primary: #212529; /* 주요 텍스트 */
-  --text-secondary: #6c757d; /* 보조 텍스트 */
-}
-
-/* 타이포그래피 */
-.font-display { font-family: 'Pretendard', sans-serif; }
-.font-body { font-family: 'Pretendard', sans-serif; }
-```
-
-## 📊 성능 지표 (실제 측정값)
-
-### 번들 크기 (실제 빌드 결과)
-- **JavaScript 총 크기**: ~1.2MB (압축 전)
-  - **Framework**: 180KB (Next.js + React)
-  - **Main Bundle**: 116KB (앱 메인 로직)
-  - **Polyfills**: 112KB (브라우저 호환성)
-  - **기타 청크들**: ~800KB (기능별 분할)
-- **CSS**: 32KB (Tailwind CSS 최적화)
-- **이미지**: WebP/AVIF 자동 변환 지원
-
-### 코드 분할 최적화
-- **메인 번들**: 116KB (핵심 기능)
-- **기능별 분할**: 12-60KB (페이지별 지연 로딩)
-- **공통 라이브러리**: 180KB (React, Next.js)
-
-### 성능 목표 (기준값)
+### **로딩 성능**
 - **First Contentful Paint**: < 1.5초
 - **Largest Contentful Paint**: < 2.5초
 - **Cumulative Layout Shift**: < 0.1
-- **쿼리 응답 시간**: < 100ms
-- **실시간 업데이트**: < 50ms
+
+### **데이터베이스 성능**
+- **인덱싱**: 자주 조회되는 컬럼에 인덱스 적용
+- **쿼리 최적화**: N+1 문제 방지를 위한 조인 사용
+- **캐싱**: Redis 기반 세션 및 데이터 캐싱
+
+## 🔒 보안 고려사항
+
+### **인증 및 권한**
+- **JWT 토큰**: Supabase Auth 기반 보안 토큰
+- **Row Level Security**: 데이터베이스 레벨 권한 제어
+- **CORS 설정**: 허용된 도메인만 API 접근 가능
+
+### **데이터 보호**
+- **입력 검증**: 클라이언트 및 서버 측 검증
+- **SQL 인젝션 방지**: 파라미터화된 쿼리 사용
+- **XSS 방지**: React의 자동 이스케이핑 활용
+
+## 🚀 배포 및 운영
+
+### **배포 환경**
+- **Vercel**: 자동 배포 및 CDN
+- **Supabase**: 데이터베이스 및 백엔드 서비스
+- **GitHub Actions**: CI/CD 파이프라인
+
+### **모니터링**
+- **Vercel Analytics**: 성능 및 사용자 행동 분석
+- **Supabase Dashboard**: 데이터베이스 성능 모니터링
+- **Error Tracking**: 실시간 에러 추적 및 알림
+
+## 📱 사용법 가이드
+
+### **시작하기**
+1. **회원가입**: 이메일/비밀번호로 간편 가입
+2. **위치 설정**: 현재 위치 또는 주소 입력
+3. **상품 등록**: AI 작성 기능으로 쉽게 상품 등록
+4. **거래 시작**: 채팅을 통한 안전한 거래
+
+### **주요 기능**
+- **상품 검색**: 키워드 및 위치 기반 검색
+- **지도 보기**: 근처 판매자 위치 확인
+- **채팅**: 실시간 메시지로 소통
+- **프로필 관리**: 개인정보 및 거래 내역 관리
+
+## 🤝 기여하기
+
+### **개발 환경 설정**
+```bash
+# 저장소 클론
+git clone https://github.com/your-username/carrot-market-clone.git
+
+# 의존성 설치
+npm install
+
+# 환경 변수 설정
+cp .env.example .env.local
+
+# 개발 서버 실행
+npm run dev
+```
+
+### **코드 컨벤션**
+- **TypeScript**: 엄격한 타입 체크 사용
+- **ESLint**: 코드 품질 규칙 준수
+- **Prettier**: 일관된 코드 포맷팅
+- **커밋 메시지**: Conventional Commits 형식 사용
+
+## 📄 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ---
 
-**이 프로젝트는 지속적으로 개선되고 있습니다. 새로운 기능이나 개선사항을 제안해주세요!** 🚀
+**🥕 당근마켓 클론으로 가까운 이웃과 따뜻한 거래를 시작해보세요!**
